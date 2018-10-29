@@ -154,10 +154,6 @@ def train_vae():
                 writer.add_summary(summary, step)
                 save_path = saver.save(sess, model_name, global_step=global_step)
 
-            if loss_value <= 35:
-                print ('step {}: training loss {:.6f}'.format(step, loss_value))
-                save_path = saver.save(sess, model_name, global_step=global_step)
-                break
             step += 1
 
     except (KeyboardInterrupt, SystemExit):
