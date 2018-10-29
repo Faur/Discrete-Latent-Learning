@@ -1,57 +1,75 @@
 import tensorflow as tf
 import numpy as np
+import time
 
 import data_utils
-from vision_module import ContinuousAutoEncoder
+from vision_module import ContinuousAutoEncoder, DiscreteAutoEncoder
 
 # np.random.seed(0)
 # tf.set_random_seed(0)
 
+# TODO: Things to consider
+# * Use numpy for scalar tracking?
+
 # TODO: Handle this better!
 
-def create_or_load_vae(model_path):
+def create_or_load_vae(model_path, network_args):
     graph = tf.Graph()
-    # with graph.as_default():  # Original formuation
-    graph.as_default()
+    with graph.as_default():  # Original formuation
+        # graph.as_default()
 
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    # sess = tf.Session(config=config, graph=graph) # previous
-    sess = tf.InteractiveSession(config=config)
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        # sess = tf.Session(config=config, graph=graph) # previous
+        sess = tf.InteractiveSession(config=config, graph=graph)
 
-    if "continuous" in model_path:
-        print("Continuous")
-        network = ContinuousAutoEncoder([32])
-    elif 'discrete' in model_path:
-        print("Discrete")
-        raise NotImplementedError
+        if "continuous" in model_path:
+            print("Continuous")
+            network = ContinuousAutoEncoder(network_args)
+        elif 'discrete' in model_path:
+            print("Discrete")
+            network = DiscreteAutoEncoder(network_args)
+        else:
+            print("Undefined")
+            raise NotImplementedError
+
+        init = tf.global_variables_initializer()
+        sess.run(init)
+
+        saver = tf.train.Saver(max_to_keep=1)
+        try:
+            saver.restore(sess, tf.train.latest_checkpoint(model_path))
+            print("Model restored from: {}".format(model_path))
+        except:
+            print("Could not restore saved model")
+
+        return sess, network, saver
+
+
+def train_vae(AE_type):
+    ### GENERAL SETUP
+    experiment_name = AE_type +"_"+ str(time.time())
+    model_path = "saved_model_" + AE_type + "/"
+    model_name = model_path + experiment_name + '_model'
+
+    print('experiment_name', experiment_name)
+    print('model_path', model_path)
+    print('model_name', model_name)
+    print()
+
+    if 'continuous' in experiment_name:
+        network_args = [32]
+    elif 'discrete' in experiment_name:
+        network_args = [[32, 32]]
     else:
-        print("Undefined")
-        raise NotImplementedError
-
-    init = tf.global_variables_initializer()
-    sess.run(init)
-
-    saver = tf.train.Saver(max_to_keep=1)
-    try:
-        saver.restore(sess, tf.train.latest_checkpoint(model_path))
-        print("Model restored from: {}".format(model_path))
-    except:
-        print("Could not restore saved model")
-
-    return sess, network, saver
-
-
-def train_vae(experiment_name):
-    model_path = "saved_model_" + experiment_name + "/"
-    model_name = model_path + '_model'
+        raise Exception
 
     ### DATA
-    batch_size = 2  # TODO: Use real
+    batch_size = 4  # TODO: Use real
     train_iter, test_iter = data_utils.load_data(batch_size, 'mnist')
 
     ### NETWORK
-    sess, network, saver = create_or_load_vae(model_path)
+    sess, network, saver = create_or_load_vae(model_path, network_args=network_args)
 
     # TODO: load or inferr gloabl step (don't start at zero!)
     global_step = tf.Variable(0, name='global_step', trainable=False)
@@ -69,12 +87,15 @@ def train_vae(experiment_name):
 
             _, loss_value = sess.run([train_op, network.loss],
                                 feed_dict={network.image: images})
+            network.update_params(e_step)
 
             if np.isnan(loss_value):
                 raise ValueError('Loss value is NaN')
             if step % 10 == 0 and step > 0:
-                print("Epoch {:5}, obs {:9}: training loss {:.3f}".format(
-                    epoch, e_step*batch_size, loss_value))
+                print("Epoch {:5}, obs {:9}: T. loss {:9.3f}".format(
+                    epoch, e_step, loss_value), end=' ### ')
+                network.print_summary()
+
                 [summary] = sess.run([network.merged], feed_dict={network.image: images})
                 writer.add_summary(summary, step*batch_size)
                 save_path = saver.save(sess, model_name, global_step=global_step)
@@ -90,6 +111,7 @@ def train_vae(experiment_name):
 
 if __name__ == '__main__':
     AE_types = ["continuous", "discrete"]
-    train_vae(AE_types[0])
+    # TODO: Beter switching logic handling!
+    # train_vae(AE_types[0])
     train_vae(AE_types[1])
 

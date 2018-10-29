@@ -7,7 +7,7 @@ def data_iterator(data, batch_size):
     while True:
         np.random.shuffle(data)
         for i in range(int(N/batch_size)):
-            yield epoch, i, data[i*batch_size:(i+1)*batch_size]
+            yield epoch, i*batch_size, data[i*batch_size:(i+1)*batch_size]
         epoch + 1
 
 
