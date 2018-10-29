@@ -76,9 +76,9 @@ class Network(object):
         reconstruction_loss = tf.reduce_sum(tf.square(logits_flat - labels_flat), axis = 1)
         kl_loss = 0.5 * tf.reduce_sum(tf.exp(self.z_logvar) + self.z_mu**2 - 1. - self.z_logvar, 1)
         vae_loss = tf.reduce_mean(reconstruction_loss + kl_loss)
-        tf.summary.scalar("KL_loss", tf.reduce_mean(kl_loss))
-        tf.summary.scalar("rec_loss", tf.reduce_mean(reconstruction_loss))
-        tf.summary.scalar("total_loss", vae_loss)
+        tf.summary.scalar("train/KL_loss", tf.reduce_mean(kl_loss))
+        tf.summary.scalar("train/rec_loss", tf.reduce_mean(reconstruction_loss))
+        tf.summary.scalar("train/total_loss", vae_loss)
         return vae_loss
 
     def get_embedding(self, sess, observation):
