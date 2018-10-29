@@ -59,6 +59,8 @@ def train_vae(AE_type):
     print('model_name', model_name)
     print()
 
+    ################## SETTINGS #####################
+    batch_size = 64  # TODO: Use real
     if 'continuous' in experiment_name:
         network_args = [32]
     elif 'discrete' in experiment_name:
@@ -67,7 +69,6 @@ def train_vae(AE_type):
         raise Exception
 
     ### DATA
-    batch_size = 4  # TODO: Use real
     train_iter, test_iter = data_utils.load_data(batch_size, 'mnist')
 
     ### NETWORK
@@ -89,7 +90,7 @@ def train_vae(AE_type):
 
             _, loss_value = sess.run([train_op, network.loss],
                                 feed_dict={network.image: images})
-            network.update_params(e_step)
+            network.update_params(step*batch_size)
 
             if np.isnan(loss_value):
                 raise ValueError('Loss value is NaN')
@@ -117,6 +118,6 @@ def train_vae(AE_type):
 if __name__ == '__main__':
     AE_types = ["continuous", "discrete"]
     # TODO: Beter switching logic handling!
-    # train_vae(AE_types[0])
+    train_vae(AE_types[0])
     train_vae(AE_types[1])
 

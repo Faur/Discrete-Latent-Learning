@@ -104,6 +104,12 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
         z = self.sample_z(z_mu, z_logvar)
         print(z)
         print()
+
+        std = tf.sqrt(tf.exp(z_logvar))
+        tf.summary.histogram('train_C/z_mu', z_mu)
+        tf.summary.histogram('train_C/z_std', std)
+        tf.summary.histogram('train_C/z', z)
+
         return z, (z_mu, z_logvar)
 
     def compute_loss(self):
@@ -112,9 +118,9 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
         rec_loss = self.reconstruction_loss()
         kl_loss = 0.5 * tf.reduce_sum(tf.exp(z_logvar) + z_mu**2 - 1. - z_logvar, 1)
         vae_loss = tf.reduce_mean(rec_loss + kl_loss)
-        tf.summary.scalar("train/KL_loss_C", tf.reduce_mean(kl_loss))
+        tf.summary.scalar("train/KL_loss", tf.reduce_mean(kl_loss))
         tf.summary.scalar("train/rec_loss", tf.reduce_mean(rec_loss))
-        tf.summary.scalar("train/total_loss_C", vae_loss)
+        tf.summary.scalar("train/total_loss", vae_loss)
         return vae_loss
 
     def predict(self, sess, data):
@@ -134,17 +140,17 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
 
         self.tau0 = 5.0
         self.tau_min = 0.1
-        half_life = 1000
+        half_life = 100
         self.anneal_rate = np.log(2)/half_life
         self.tau = K.variable(self.tau_min, name="taur")
         tf.summary.scalar("hyper/tau", tf.reduce_mean(self.tau))
 
         self.KL_boost0 = 2.0
         self.KL_boost_min = 0.01  # TODO: Check value!
-        half_life = 1000
+        half_life = 100
         self.KL_boost_anneal_rate = np.log(2)/half_life
         self.KL_boost = K.variable(self.KL_boost_min, name="KL_boost_min")
-        tf.summary.scalar("hyper/KL_boost_D", tf.reduce_mean(self.KL_boost))
+        tf.summary.scalar("hyper/KL_boost", tf.reduce_mean(self.KL_boost))
 
         self.setup_network()
 
@@ -164,27 +170,38 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         z = K.reshape(z, (-1, N*M))
         return z
 
+
     def latent(self, x):
         print("Latent: Discrete")
         N, M = self.latent_dim[0]
 
         x = tf.layers.flatten(x)
         print(x)
+
         logits = tf.layers.dense(x, units=N*M, name='z_logits')
+        logits = K.reshape(logits, (-1, N, M))
         print(logits)
 
-        q_y = K.reshape(logits, (-1, N, M))
-        q_y = softmax(q_y)
-
+        q_y = softmax(logits)
         print(q_y)
+
         z = self.sample_z(q_y)
         print(z)
         print()
+
+        # tf.summary.image('logits', tf.expand_dims(logits, -1), self.tb_num_images)
+        # tf.summary.image('q_y', tf.expand_dims(q_y, -1), self.tb_num_images)
+        tf.summary.image('z', tf.expand_dims(K.reshape(z, (-1, N, M)), -1), self.tb_num_images)
+
+        tf.summary.histogram('train_D/logits', logits)
+        tf.summary.histogram('train_D/q_y', q_y)
+        tf.summary.histogram('train_D/z', z)
+
         return z, (logits, q_y)
 
     def compute_loss(self):
         N, M = self.latent_dim[0]
-        logits, q_y = self.latent_var
+        _, q_y = self.latent_var
 
         log_q_y = K.log(q_y + 1e-20)
         kl_loss = q_y * (log_q_y - K.log(1.0 / M))
@@ -194,9 +211,9 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
 
         elbo = tf.reduce_mean(rec_loss + kl_loss*self.KL_boost)
 
-        tf.summary.scalar("train/KL_loss_D", tf.reduce_mean(kl_loss))
+        tf.summary.scalar("train/KL_loss", tf.reduce_mean(kl_loss))
         tf.summary.scalar("train/rec_loss", tf.reduce_mean(rec_loss))
-        tf.summary.scalar("train/total_loss_D", elbo)
+        tf.summary.scalar("train/total_loss", elbo)
         return elbo
 
     def print_summary(self):
