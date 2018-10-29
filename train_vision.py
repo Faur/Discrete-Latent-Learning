@@ -5,11 +5,13 @@ import time
 import data_utils
 from vision_module import ContinuousAutoEncoder, DiscreteAutoEncoder
 
-# np.random.seed(0)
-# tf.set_random_seed(0)
+np.random.seed(int(time.time()))
+tf.set_random_seed(int(time.time()))
 
 # TODO: Things to consider
 # * Use numpy for scalar tracking?
+# * Rec loss should be independeont of number of pixels
+# * KL loss should be independent of number of dimensions
 
 # TODO: Handle this better!
 
@@ -60,7 +62,7 @@ def train_vae(AE_type):
     if 'continuous' in experiment_name:
         network_args = [32]
     elif 'discrete' in experiment_name:
-        network_args = [[32, 32]]
+        network_args = [[32, 16]]
     else:
         raise Exception
 
@@ -98,7 +100,10 @@ def train_vae(AE_type):
 
                 [summary] = sess.run([network.merged], feed_dict={network.image: images})
                 writer.add_summary(summary, step*batch_size)
-                save_path = saver.save(sess, model_name, global_step=global_step)
+                try:
+                    save_path = saver.save(sess, model_name, global_step=global_step)
+                except:
+                    print("\nFAILED TO SAVE MODEL!\n")
 
             step += 1
 
