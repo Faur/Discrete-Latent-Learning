@@ -2,10 +2,10 @@ import tensorflow as tf
 import numpy as np
 import os
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+from keras import backend as K
+from keras.activations import softmax
 
-# np.random.seed(0)
-# tf.set_random_seed(0)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 class BaseAutoEncoder(object):
     # Create model
@@ -126,28 +126,6 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
 
     def get_embedding(self, sess, observation):
         return sess.run(self.z, feed_dict={self.image: observation[None, :, :, :]})
-
-
-
-
-
-import numpy as np
-import glob, random
-import time
-
-import matplotlib.pyplot as plt
-from skimage.transform import resize
-
-import tensorflow as tf
-from keras import backend as K
-from keras.models import Model, Sequential
-from keras.activations import softmax
-from keras.objectives import mean_squared_error as mse
-from keras.callbacks import EarlyStopping, TensorBoard
-from keras.optimizers import Adam
-from keras.layers import Input, Dense, Lambda, Conv2D, Flatten, Conv2DTranspose, Reshape, Activation
-
-import os, sys, inspect
 
 
 class DiscreteAutoEncoder(BaseAutoEncoder):
