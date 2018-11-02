@@ -56,7 +56,7 @@ def create_or_load_vae(model_path, network_args):
 def train_vae(AE_type, network_args, experiment_name=None):
     ### GENERAL SETUP
     if experiment_name is None:
-    	experiment_name = AE_type +"_"+ str(time.time())
+        experiment_name = AE_type +"_"+ str(time.time())
     model_path = "saved_model_" + AE_type + "/"
     model_name = model_path + experiment_name + '_model'
 
@@ -102,8 +102,10 @@ def train_vae(AE_type, network_args, experiment_name=None):
                 _, _, images = next(test_iter)
                 
                 # TODO: Test should use hard sample
-                [summary, test_loss] = sess.run([network.merged, network.loss], 
-                    feed_dict={network.image: images})
+                [summary, test_loss] = sess.run([network.merged, network.loss], feed_dict={
+                    network.image: images,
+                    network.is_training: True
+                })
                 test_loss = np.mean(test_loss)
                 writer_test.add_summary(summary, step*batch_size)
 
@@ -117,7 +119,10 @@ def train_vae(AE_type, network_args, experiment_name=None):
                     epoch, step*batch_size, loss_value), end=' ### ')
                 network.print_summary()
 
-                [summary] = sess.run([network.merged], feed_dict={network.image: images})
+                [summary] = sess.run([network.merged], feed_dict={
+                    network.image: images,
+                    network.is_training: False
+                })
                 writer.add_summary(summary, step*batch_size)
                 try:
                     save_path = saver.save(sess, model_name, global_step=global_step)
@@ -129,8 +134,8 @@ def train_vae(AE_type, network_args, experiment_name=None):
             step += 1
 
             if epoch >= 100:
-            	print("Max epoch reached!")
-            	break
+                print("Max epoch reached!")
+                break
 
     except (KeyboardInterrupt, SystemExit):
         print("Manual Interrupt")

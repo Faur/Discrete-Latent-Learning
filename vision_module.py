@@ -13,6 +13,7 @@ class BaseAutoEncoder(object):
         self.latent_dim = latent_dim
         self.tb_num_images = 3
 
+        self.is_training = tf.placeholder(tf.bool, name='is_training')
         self.img_channels = input_dim[-1]
         self.image = tf.placeholder(tf.float32, (None,)+input_dim, name='image')
         tf.summary.image('image', self.image, self.tb_num_images)
@@ -102,7 +103,8 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
 
     def sample_z(self, mu, logvar):
         eps = tf.random_normal(shape=tf.shape(mu))
-        return mu + tf.exp(logvar / 2) * eps
+        z = mu + tf.exp(logvar / 2) * eps
+        return z
 
     def latent(self, x):
         print("Latent: Continuous")
@@ -190,9 +192,26 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         U = K.random_uniform(K.shape(log_q_y), 0, 1)
         y = log_q_y - K.log(-K.log(U + 1e-20) + 1e-20)  # log_prob + gumbel noise
 
-        z = softmax(y / self.tau)
-        z = K.reshape(z, (-1, N*M))
+        # z = K.reshape(softmax(y / self.tau), (-1, N*M))
+
+
+        # z = tf.cond(
+        #     self.is_training,
+        #     K.reshape(softmax(y / self.tau), (-1, N * M)),
+        #     log_q_y
+        # )
+        q_y = tf.reshape(q_y, (-1, M))
+        print(q_y)
+        z = tf.multinomial(tf.log(q_y), 1)
+        print(z)
+        z = tf.one_hot(z, M)
+        print(z)
+        z = tf.reshape(z, (-1, N, M))
+        print(z)
+
         return z
+
+
 
     def latent(self, x):
         print("Latent: Discrete")
