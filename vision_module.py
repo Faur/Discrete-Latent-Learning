@@ -139,15 +139,17 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         super(DiscreteAutoEncoder, self).__init__(*args, **kwargs)
 
         self.tau0 = 5.0
-        self.tau_min = 0.1
-        half_life = 100
+        self.tau_min = 0.01
+        half_life = 5e5
         self.anneal_rate = np.log(2)/half_life
         self.tau = K.variable(self.tau_min, name="taur")
         tf.summary.scalar("hyper/tau", tf.reduce_mean(self.tau))
 
         self.KL_boost0 = 2.0
-        self.KL_boost_min = 0.01  # TODO: Check value!
-        half_life = 100
+        self.KL_boost_min = 0.5  # TODO: Check value!
+        self.KL_boost_min = 5000  # TODO: Check value!
+        # self.KL_boost_min = 1  # TODO: Check value!
+        half_life = 1e6
         self.KL_boost_anneal_rate = np.log(2)/half_life
         self.KL_boost = K.variable(self.KL_boost_min, name="KL_boost_min")
         tf.summary.scalar("hyper/KL_boost", tf.reduce_mean(self.KL_boost))
@@ -191,7 +193,7 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
 
         # tf.summary.image('logits', tf.expand_dims(logits, -1), self.tb_num_images)
         # tf.summary.image('q_y', tf.expand_dims(q_y, -1), self.tb_num_images)
-        tf.summary.image('z', tf.expand_dims(K.reshape(z, (-1, N, M)), -1), self.tb_num_images)
+        tf.summary.image('z', K.reshape(z, (-1, N, M, 1)), self.tb_num_images)
 
         tf.summary.histogram('train_D/logits', logits)
         tf.summary.histogram('train_D/q_y', q_y)
@@ -206,10 +208,11 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         log_q_y = K.log(q_y + 1e-20)
         kl_loss = q_y * (log_q_y - K.log(1.0 / M))
         kl_loss = K.sum(kl_loss, axis=(1, 2))
-
+        kl_loss *= self.KL_boost
+        
         rec_loss = self.reconstruction_loss()
 
-        elbo = tf.reduce_mean(rec_loss + kl_loss*self.KL_boost)
+        elbo = tf.reduce_mean(rec_loss + kl_loss)
 
         tf.summary.scalar("train/KL_loss", tf.reduce_mean(kl_loss))
         tf.summary.scalar("train/rec_loss", tf.reduce_mean(rec_loss))
@@ -222,11 +225,9 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
 
     def update_params(self, step):
         K.set_value(self.tau,
-                np.max([self.tau_min,
-                        self.tau0 * np.exp(-self.anneal_rate * step)]))
-        K.set_value(self.KL_boost, np.max([self.KL_boost_min,
-                                          self.KL_boost0 * np.exp(
-                                              -self.KL_boost_anneal_rate * step)]))
+            np.max([self.tau_min, self.tau0 * np.exp(-self.anneal_rate * step)]))
+        K.set_value(self.KL_boost, 
+            np.max([self.KL_boost_min, self.KL_boost0 * np.exp(-self.KL_boost_anneal_rate * step)]))
 
     def get_embedding(self, sess, observation):
         raise NotImplementedError
