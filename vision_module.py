@@ -56,31 +56,35 @@ class BaseAutoEncoder(object):
         print()
         return x
 
-    def reconstruction_loss(self):
-        logits_flat = tf.layers.flatten(self.reconstructions)
-        labels_flat = tf.layers.flatten(self.image)
-        return tf.reduce_sum(tf.square(logits_flat - labels_flat), axis=1)
-
-    def print_summary(self):
-        print()
-
-    def update_params(self, *args, **kwargs):
-        pass
-
     def sample_z(self, *args):
         raise NotImplementedError
 
     def latent(self, x):
         raise NotImplementedError
 
+    def reconstruction_loss(self):
+        logits_flat = tf.layers.flatten(self.reconstructions)
+        labels_flat = tf.layers.flatten(self.image)
+        rec_loss = tf.reduce_mean(tf.square(logits_flat - labels_flat), axis=1)
+        return rec_loss
+
+    def KL_loss(self):
+        raise NotImplementedError
+
     def compute_loss(self):
         raise NotImplementedError
+
+    def update_params(self, *args, **kwargs):
+        pass
 
     def get_embedding(self, sess, observation):
         raise NotImplementedError
 
     def predict(self, sess, data):
         raise NotImplementedError
+
+    def print_summary(self):
+        print()
 
 
 class ContinuousAutoEncoder(BaseAutoEncoder):
@@ -112,16 +116,23 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
 
         return z, (z_mu, z_logvar)
 
-    def compute_loss(self):
+    def KL_loss(self):
         z_mu, z_logvar = self.latent_var
+        kl_loss = 0.5 * tf.reduce_mean(tf.exp(z_logvar) + z_mu**2 - 1. - z_logvar, 1)
+        return kl_loss
 
+    def compute_loss(self):
         rec_loss = self.reconstruction_loss()
-        kl_loss = 0.5 * tf.reduce_sum(tf.exp(z_logvar) + z_mu**2 - 1. - z_logvar, 1)
-        vae_loss = tf.reduce_mean(rec_loss + kl_loss)
-        tf.summary.scalar("train/KL_loss", tf.reduce_mean(kl_loss))
-        tf.summary.scalar("train/rec_loss", tf.reduce_mean(rec_loss))
+        kl_loss = self.KL_loss()
+        vae_loss = rec_loss + kl_loss
+
+        tf.summary.scalar("train/KL_loss", kl_loss)
+        tf.summary.scalar("train/rec_loss", rec_loss)
         tf.summary.scalar("train/total_loss", vae_loss)
         return vae_loss
+
+    def get_embedding(self, sess, observation):
+        return sess.run(self.z, feed_dict={self.image: observation[None, :, :, :]})
 
     def predict(self, sess, data):
         print(sess)
@@ -130,8 +141,6 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
         sigma = np.exp(z_logvar/2)
         return pred, mu, sigma, z
 
-    def get_embedding(self, sess, observation):
-        return sess.run(self.z, feed_dict={self.image: observation[None, :, :, :]})
 
 
 class DiscreteAutoEncoder(BaseAutoEncoder):
@@ -173,7 +182,6 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         z = K.reshape(z, (-1, N*M))
         return z
 
-
     def latent(self, x):
         print("Latent: Discrete")
         N, M = self.latent_dim[0]
@@ -202,27 +210,25 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
 
         return z, (logits, q_y)
 
-    def compute_loss(self):
+    def KL_loss(self):
         N, M = self.latent_dim[0]
         _, q_y = self.latent_var
 
-        rec_loss = self.reconstruction_loss()
-
         log_q_y = K.log(q_y + 1e-20)
         kl_loss = q_y * (log_q_y - K.log(1.0 / M))
-        kl_loss = K.sum(kl_loss, axis=(1, 2))
+        kl_loss = tf.reduce_mean(kl_loss, axis=(1, 2))
         kl_loss *= self.KL_boost
-        
-        elbo = tf.reduce_mean(rec_loss + kl_loss)
+        return kl_loss
 
-        tf.summary.scalar("train/KL_loss", tf.reduce_mean(kl_loss))
-        tf.summary.scalar("train/rec_loss", tf.reduce_mean(rec_loss))
+    def compute_loss(self):
+        rec_loss = self.reconstruction_loss()
+        kl_loss = self.KL_loss()
+        elbo = rec_loss + kl_loss
+
+        tf.summary.scalar("train/KL_loss", kl_loss)
+        tf.summary.scalar("train/rec_loss", rec_loss)
         tf.summary.scalar("train/total_loss", elbo)
         return elbo
-
-    def print_summary(self):
-        print("tau {:5.2f}".format(K.get_value(self.tau)),
-              "- KL_boost {:5.2f}".format(K.get_value(self.KL_boost)))
 
     def update_params(self, step):
         K.set_value(self.tau,
@@ -236,3 +242,6 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
     def predict(self, sess, data):
         raise NotImplementedError
 
+    def print_summary(self):
+        print("tau {:5.2f}".format(K.get_value(self.tau)),
+              "- KL_boost {:5.2f}".format(K.get_value(self.KL_boost)))
