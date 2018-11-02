@@ -18,8 +18,8 @@ class BaseAutoEncoder(object):
         tf.summary.image('image', self.image, self.tb_num_images)
 
     def setup_network(self):
-        self.latent_logits = self.encoder(self.image)
-        self.z, self.latent_var = self.latent(self.latent_logits)
+        self.encoder_out = self.encoder(self.image)
+        self.z, self.latent_var = self.latent(self.encoder_out)
         self.reconstructions = self.decoder(self.z)
         tf.summary.image('reconstructions', self.reconstructions, self.tb_num_images)
 
@@ -90,6 +90,14 @@ class BaseAutoEncoder(object):
 class ContinuousAutoEncoder(BaseAutoEncoder):
     def __init__(self, *args, **kwargs):
         super(ContinuousAutoEncoder, self).__init__(*args, **kwargs)
+
+        self.KL_boost0 = 0.05
+        self.KL_boost_min = 0.01  # TODO: Check value!
+        half_life = 5e5
+        self.KL_boost_anneal_rate = np.log(2)/half_life
+        self.KL_boost = K.variable(self.KL_boost_min, name="KL_boost_min")
+        tf.summary.scalar("hyper/KL_boost_C", tf.reduce_mean(self.KL_boost))
+
         self.setup_network()
 
     def sample_z(self, mu, logvar):
@@ -119,17 +127,21 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
     def KL_loss(self):
         z_mu, z_logvar = self.latent_var
         kl_loss = 0.5 * tf.reduce_mean(tf.exp(z_logvar) + z_mu**2 - 1. - z_logvar, 1)
-        return kl_loss
+        return kl_loss*self.KL_boost
 
     def compute_loss(self):
         rec_loss = self.reconstruction_loss()
         kl_loss = self.KL_loss()
-        vae_loss = rec_loss + kl_loss
+        vae_loss = tf.reduce_mean(rec_loss + kl_loss)
 
         tf.summary.scalar("train/KL_loss", tf.reduce_mean(kl_loss))
         tf.summary.scalar("train/rec_loss", tf.reduce_mean(rec_loss))
         tf.summary.scalar("train/total_loss", tf.reduce_mean(vae_loss))
         return vae_loss
+
+    def update_params(self, step):
+        K.set_value(self.KL_boost, 
+            np.max([self.KL_boost_min, self.KL_boost0 * np.exp(-self.KL_boost_anneal_rate * step)]))
 
     def get_embedding(self, sess, observation):
         return sess.run(self.z, feed_dict={self.image: observation[None, :, :, :]})
@@ -140,7 +152,6 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
         pred, mu, z_logvar, z = sess.run([self.reconstructions, z_mu, z_logvar, self.z], feed_dict={self.image:data})
         sigma = np.exp(z_logvar/2)
         return pred, mu, sigma, z
-
 
 
 class DiscreteAutoEncoder(BaseAutoEncoder):
@@ -154,14 +165,12 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         self.tau = K.variable(self.tau_min, name="taur")
         tf.summary.scalar("hyper/tau", tf.reduce_mean(self.tau))
 
-        self.KL_boost0 = 2.0
-        self.KL_boost_min = 0.5  # TODO: Check value!
-        # self.KL_boost_min = 5000  # TODO: Check value!
-        # self.KL_boost_min = 1  # TODO: Check value!
-        half_life = 1e6
+        self.KL_boost0 = 0.5
+        self.KL_boost_min = 0.1  # TODO: Check value!
+        half_life = 5e5
         self.KL_boost_anneal_rate = np.log(2)/half_life
         self.KL_boost = K.variable(self.KL_boost_min, name="KL_boost_min")
-        tf.summary.scalar("hyper/KL_boost", tf.reduce_mean(self.KL_boost))
+        tf.summary.scalar("hyper/KL_boost_D", tf.reduce_mean(self.KL_boost))
 
         self.setup_network()
 
@@ -217,13 +226,12 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         log_q_y = K.log(q_y + 1e-20)
         kl_loss = q_y * (log_q_y - K.log(1.0 / M))
         kl_loss = tf.reduce_mean(kl_loss, axis=(1, 2))
-        kl_loss *= self.KL_boost
-        return kl_loss
+        return kl_loss*self.KL_boost
 
     def compute_loss(self):
         rec_loss = self.reconstruction_loss()
         kl_loss = self.KL_loss()
-        elbo = rec_loss + kl_loss
+        elbo = tf.reduce_mean(rec_loss + kl_loss)
 
         tf.summary.scalar("train/KL_loss", tf.reduce_mean(kl_loss))
         tf.summary.scalar("train/rec_loss", tf.reduce_mean(rec_loss))

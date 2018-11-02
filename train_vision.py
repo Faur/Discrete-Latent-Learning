@@ -143,38 +143,40 @@ if __name__ == '__main__':
     AE_types = ["continuous", "discrete"]
     # TODO: Beter switching logic handling!
 
-    # network_args = [1]
-    # train_vae(AE_types[0], network_args, 'continuous_1_' + str(time.time())) 
+    network_args = [1]
+    train_vae(AE_types[0], network_args, 'continuous_1_' + str(time.time())) 
 
     network_args = [2]
     train_vae(AE_types[0], network_args, 'continuous_2_' + str(time.time())) 
 
-#    network_args = [4]
-#    train_vae(AE_types[0], network_args, 'continuous_4_' + str(time.time())) 
+    network_args = [4]
+    train_vae(AE_types[0], network_args, 'continuous_4_' + str(time.time())) 
 
     # network_args = [8]
     # train_vae(AE_types[0], network_args, 'continuous_8_' + str(time.time())) 
 
+
+
     # network_args = [[2, 2]]
-    # train_vae(AE_types[1], network_args, 'disc_2_2_KLB0.5_' + str(time.time()))
+    # train_vae(AE_types[1], network_args, 'disc_2_2_' + str(time.time()))
 
     # network_args = [[4, 2]]
-    # train_vae(AE_types[1], network_args, 'disc_4_2_KLB0.5_' + str(time.time()))
+    # train_vae(AE_types[1], network_args, 'disc_4_2_' + str(time.time()))
 
     # network_args = [[8, 2]]
-    # train_vae(AE_types[1], network_args, 'disc_8_2_KLB0.5_' + str(time.time()))
+    # train_vae(AE_types[1], network_args, 'disc_8_2_' + str(time.time()))
 
- #   network_args = [[16, 2]]
- #   train_vae(AE_types[1], network_args, 'disc_16_2_KLB0.5_' + str(time.time()))
+    network_args = [[16, 2]]
+    train_vae(AE_types[1], network_args, 'disc_16_2_' + str(time.time()))
 
-#    network_args = [[32, 2]]
-#    train_vae(AE_types[1], network_args, 'disc_32_2_KLB0.5_' + str(time.time()))
+    network_args = [[32, 2]]
+    train_vae(AE_types[1], network_args, 'disc_32_2_' + str(time.time()))
 
-    # network_args = [[64, 2]]
-    # train_vae(AE_types[1], network_args, 'disc_64_2_KLB0.5_' + str(time.time()))
+    network_args = [[64, 2]]
+    train_vae(AE_types[1], network_args, 'disc_64_2_' + str(time.time()))
 
-    # network_args = [[128, 2]]
-    # train_vae(AE_types[1], network_args, 'disc_128_2_KLB0.5_' + str(time.time()))
+    network_args = [[128, 2]]
+    train_vae(AE_types[1], network_args, 'disc_128_2_' + str(time.time()))
 
     # network_args = [[256, 2]]
-    # train_vae(AE_types[1], network_args, 'disc_256_2_KLB0.5_' + str(time.time()))
+    # train_vae(AE_types[1], network_args, 'disc_256_2_' + str(time.time()))
