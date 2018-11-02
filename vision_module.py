@@ -91,8 +91,8 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
     def __init__(self, *args, **kwargs):
         super(ContinuousAutoEncoder, self).__init__(*args, **kwargs)
 
-        self.KL_boost0 = 0.05
-        self.KL_boost_min = 0.01  # TODO: Check value!
+        self.KL_boost0 = 0.01
+        self.KL_boost_min = 0.001  # TODO: Check value!
         half_life = 5e5
         self.KL_boost_anneal_rate = np.log(2)/half_life
         self.KL_boost = K.variable(self.KL_boost_min, name="KL_boost_min")
@@ -152,6 +152,9 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
         pred, mu, z_logvar, z = sess.run([self.reconstructions, z_mu, z_logvar, self.z], feed_dict={self.image:data})
         sigma = np.exp(z_logvar/2)
         return pred, mu, sigma, z
+
+    def print_summary(self):
+        print("KL_boost {:5.4f}".format(K.get_value(self.KL_boost)))
 
 
 class DiscreteAutoEncoder(BaseAutoEncoder):
@@ -251,5 +254,5 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         raise NotImplementedError
 
     def print_summary(self):
-        print("tau {:5.2f}".format(K.get_value(self.tau)),
-              "- KL_boost {:5.2f}".format(K.get_value(self.KL_boost)))
+        print("tau {:5.4f}".format(K.get_value(self.tau)),
+              "- KL_boost {:5.4f}".format(K.get_value(self.KL_boost)))
