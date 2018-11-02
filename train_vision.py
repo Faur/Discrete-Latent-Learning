@@ -91,9 +91,10 @@ def train_vae(AE_type, network_args, experiment_name=None):
 
             _, loss_value = sess.run([train_op, network.loss],
                                 feed_dict={network.image: images})
+            loss_value = np.mean(loss_value)
             network.update_params(step*batch_size)
 
-            if np.isnan(loss_value):
+            if np.any(np.isnan(loss_value)):
                 raise ValueError('Loss value is NaN')
 
             valid_inter = 100
@@ -103,6 +104,7 @@ def train_vae(AE_type, network_args, experiment_name=None):
                 # TODO: Test should use hard sample
                 [summary, test_loss] = sess.run([network.merged, network.loss], 
                     feed_dict={network.image: images})
+                test_loss = np.mean(test_loss)
                 writer_test.add_summary(summary, step*batch_size)
 
                 print("Epoch {:5}, obs {:12}: Te. loss {:9.3f}".format(
@@ -144,11 +146,11 @@ if __name__ == '__main__':
     # network_args = [1]
     # train_vae(AE_types[0], network_args, 'continuous_1_' + str(time.time())) 
 
-    # network_args = [2]
-    # train_vae(AE_types[0], network_args, 'continuous_2_' + str(time.time())) 
+    network_args = [2]
+    train_vae(AE_types[0], network_args, 'continuous_2_' + str(time.time())) 
 
-    # network_args = [4]
-    # train_vae(AE_types[0], network_args, 'continuous_4_' + str(time.time())) 
+#    network_args = [4]
+#    train_vae(AE_types[0], network_args, 'continuous_4_' + str(time.time())) 
 
     # network_args = [8]
     # train_vae(AE_types[0], network_args, 'continuous_8_' + str(time.time())) 
@@ -162,14 +164,14 @@ if __name__ == '__main__':
     # network_args = [[8, 2]]
     # train_vae(AE_types[1], network_args, 'disc_8_2_KLB0.5_' + str(time.time()))
 
-    # network_args = [[16, 2]]
-    # train_vae(AE_types[1], network_args, 'disc_16_2_KLB0.5_' + str(time.time()))
+ #   network_args = [[16, 2]]
+ #   train_vae(AE_types[1], network_args, 'disc_16_2_KLB0.5_' + str(time.time()))
 
-    # network_args = [[32, 2]]
-    # train_vae(AE_types[1], network_args, 'disc_32_2_KLB0.5_' + str(time.time()))
+#    network_args = [[32, 2]]
+#    train_vae(AE_types[1], network_args, 'disc_32_2_KLB0.5_' + str(time.time()))
 
-    network_args = [[64, 2]]
-    train_vae(AE_types[1], network_args, 'disc_64_2_KLB0.5_' + str(time.time()))
+    # network_args = [[64, 2]]
+    # train_vae(AE_types[1], network_args, 'disc_64_2_KLB0.5_' + str(time.time()))
 
     # network_args = [[128, 2]]
     # train_vae(AE_types[1], network_args, 'disc_128_2_KLB0.5_' + str(time.time()))

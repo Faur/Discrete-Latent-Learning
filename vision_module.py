@@ -126,9 +126,9 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
         kl_loss = self.KL_loss()
         vae_loss = rec_loss + kl_loss
 
-        tf.summary.scalar("train/KL_loss", kl_loss)
-        tf.summary.scalar("train/rec_loss", rec_loss)
-        tf.summary.scalar("train/total_loss", vae_loss)
+        tf.summary.scalar("train/KL_loss", tf.reduce_mean(kl_loss))
+        tf.summary.scalar("train/rec_loss", tf.reduce_mean(rec_loss))
+        tf.summary.scalar("train/total_loss", tf.reduce_mean(vae_loss))
         return vae_loss
 
     def get_embedding(self, sess, observation):
@@ -225,9 +225,9 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         kl_loss = self.KL_loss()
         elbo = rec_loss + kl_loss
 
-        tf.summary.scalar("train/KL_loss", kl_loss)
-        tf.summary.scalar("train/rec_loss", rec_loss)
-        tf.summary.scalar("train/total_loss", elbo)
+        tf.summary.scalar("train/KL_loss", tf.reduce_mean(kl_loss))
+        tf.summary.scalar("train/rec_loss", tf.reduce_mean(rec_loss))
+        tf.summary.scalar("train/total_loss", tf.reduce_mean(elbo))
         return elbo
 
     def update_params(self, step):
