@@ -67,7 +67,7 @@ def train_vae(AE_type, network_args, experiment_name=None):
 
     ################## SETTINGS #####################
     batch_size = 64  # TODO: Use real
-
+    learning_rate = 0.001
     ### DATA
     train_iter, test_iter = data_utils.load_data(batch_size, 'mnist')
 
@@ -77,7 +77,7 @@ def train_vae(AE_type, network_args, experiment_name=None):
     # TODO: load or inferr gloabl step (don't start at zero!)
     global_step = tf.Variable(0, name='global_step', trainable=False)
 
-    train_op = tf.train.AdamOptimizer(0.001).minimize(network.loss, global_step=global_step)
+    train_op = tf.train.AdamOptimizer(learning_rate).minimize(network.loss, global_step=global_step)
     tf.global_variables_initializer().run()
 
     writer = tf.summary.FileWriter('logdir/'+experiment_name)

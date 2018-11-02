@@ -164,6 +164,7 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         # y = logits - K.log(-K.log(U + 1e-20) + 1e-20)  # logits + gumbel noise
         # y = K.reshape(y, (-1, self.N, self.M))
 
+        # Gumbel softmax trick
         log_q_y = K.log(q_y + 1e-20)
         U = K.random_uniform(K.shape(log_q_y), 0, 1)
         y = log_q_y - K.log(-K.log(U + 1e-20) + 1e-20)  # log_prob + gumbel noise
@@ -205,13 +206,13 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         N, M = self.latent_dim[0]
         _, q_y = self.latent_var
 
+        rec_loss = self.reconstruction_loss()
+
         log_q_y = K.log(q_y + 1e-20)
         kl_loss = q_y * (log_q_y - K.log(1.0 / M))
         kl_loss = K.sum(kl_loss, axis=(1, 2))
         kl_loss *= self.KL_boost
         
-        rec_loss = self.reconstruction_loss()
-
         elbo = tf.reduce_mean(rec_loss + kl_loss)
 
         tf.summary.scalar("train/KL_loss", tf.reduce_mean(kl_loss))
