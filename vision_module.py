@@ -147,7 +147,7 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
 
         self.KL_boost0 = 2.0
         self.KL_boost_min = 0.5  # TODO: Check value!
-        self.KL_boost_min = 5000  # TODO: Check value!
+        # self.KL_boost_min = 5000  # TODO: Check value!
         # self.KL_boost_min = 1  # TODO: Check value!
         half_life = 1e6
         self.KL_boost_anneal_rate = np.log(2)/half_life

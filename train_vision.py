@@ -169,8 +169,7 @@ if __name__ == '__main__':
     # train_vae(AE_types[1], network_args, 'disc_32_2_KLB0.5_' + str(time.time()))
 
     network_args = [[64, 2]]
-    # train_vae(AE_types[1], network_args, 'disc_64_2_KLB0.5_' + str(time.time()))
-    train_vae(AE_types[1], network_args, 'Baselilne' + str(time.time()))
+    train_vae(AE_types[1], network_args, 'disc_64_2_KLB0.5_' + str(time.time()))
 
     # network_args = [[128, 2]]
     # train_vae(AE_types[1], network_args, 'disc_128_2_KLB0.5_' + str(time.time()))
