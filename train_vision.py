@@ -77,6 +77,7 @@ def train_vae(AE_type, network_args, experiment_name=None):
 
     # TODO: load or inferr gloabl step (don't start at zero!)
     global_step = tf.Variable(0, name='global_step', trainable=False)
+    epoch = -1
 
     train_op = tf.train.AdamOptimizer(learning_rate).minimize(network.loss, global_step=global_step)
     tf.global_variables_initializer().run()
@@ -154,28 +155,15 @@ if __name__ == '__main__':
     AE_types = ["continuous", "discrete"]
     # TODO: Beter switching logic handling!
 
-    network_args = [1]
-    train_vae(AE_types[0], network_args, 'continuous_1_' + str(time.time())) 
 
-    network_args = [2]
-    train_vae(AE_types[0], network_args, 'continuous_2_' + str(time.time())) 
+    network_args = [[2, 2]]
+    train_vae(AE_types[1], network_args, 'disc_2_2_' + str(time.time()))
 
-    network_args = [4]
-    train_vae(AE_types[0], network_args, 'continuous_4_' + str(time.time())) 
+    network_args = [[4, 2]]
+    train_vae(AE_types[1], network_args, 'disc_4_2_' + str(time.time()))
 
-    # network_args = [8]
-    # train_vae(AE_types[0], network_args, 'continuous_8_' + str(time.time())) 
-
-
-
-    # network_args = [[2, 2]]
-    # train_vae(AE_types[1], network_args, 'disc_2_2_' + str(time.time()))
-
-    # network_args = [[4, 2]]
-    # train_vae(AE_types[1], network_args, 'disc_4_2_' + str(time.time()))
-
-    # network_args = [[8, 2]]
-    # train_vae(AE_types[1], network_args, 'disc_8_2_' + str(time.time()))
+    network_args = [[8, 2]]
+    train_vae(AE_types[1], network_args, 'disc_8_2_' + str(time.time()))
 
     network_args = [[16, 2]]
     train_vae(AE_types[1], network_args, 'disc_16_2_' + str(time.time()))
@@ -189,5 +177,25 @@ if __name__ == '__main__':
     network_args = [[128, 2]]
     train_vae(AE_types[1], network_args, 'disc_128_2_' + str(time.time()))
 
-    # network_args = [[256, 2]]
-    # train_vae(AE_types[1], network_args, 'disc_256_2_' + str(time.time()))
+    network_args = [[256, 2]]
+    train_vae(AE_types[1], network_args, 'disc_256_2_' + str(time.time()))
+
+
+
+    network_args = [1]
+    train_vae(AE_types[0], network_args, 'continuous_1_' + str(time.time())) 
+
+    network_args = [2]
+    train_vae(AE_types[0], network_args, 'continuous_2_' + str(time.time())) 
+
+    network_args = [4]
+    train_vae(AE_types[0], network_args, 'continuous_4_' + str(time.time())) 
+
+    network_args = [8]
+    train_vae(AE_types[0], network_args, 'continuous_8_' + str(time.time())) 
+
+
+
+    #network_args = [[16, 2]]
+    #train_vae(AE_types[1], network_args, 
+    #	'disc_test_' + str(network_args) + "_" + str(time.time()))

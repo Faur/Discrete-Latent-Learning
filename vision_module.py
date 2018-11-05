@@ -16,6 +16,7 @@ class BaseAutoEncoder(object):
         self.is_training = tf.placeholder(tf.bool, name='is_training')
         self.img_channels = input_dim[-1]
         self.image = tf.placeholder(tf.float32, (None,)+input_dim, name='image')
+        #self.image = tf.placeholder(tf.float32, (64,)+input_dim, name='image')
         tf.summary.image('image', self.image, self.tb_num_images)
 
     def setup_network(self):
@@ -194,21 +195,32 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
 
         # z = K.reshape(softmax(y / self.tau), (-1, N*M))
 
+        def gumble_softmax(y):
+            print("gumble_softmax")
+            z = softmax(y / self.tau)
+            z = tf.reshape(z, (-1, N*M))
+            return z
+
         def hardsample(log_q_y):
+            print('hardsample')
             log_q_y = tf.reshape(log_q_y, (-1, M))
             z = tf.multinomial(log_q_y, 1)
+            print("multinomial")
+            print(z)
             z = tf.one_hot(z, M)
+            print("onehot")
+            print(z)
+            z = tf.reshape(z, (-1, N*M))
+            print("reshape")
+            print(z)
             return z
 
         # TODO: make sure that hard sample works with differnet shapes
-
-
         z = tf.cond(
             self.is_training,
-            lambda: softmax(y / self.tau),
+            lambda: gumble_softmax(y),
             lambda: hardsample(log_q_y)
         )
-        z = tf.reshape(z, (-1, N*M))
 
         return z
 
@@ -229,6 +241,9 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
 
         z = self.sample_z(q_y)
         print(z)
+
+        # TODO: remove the 0th column.
+        #z=
         print()
 
         # tf.summary.image('logits', tf.expand_dims(logits, -1), self.tb_num_images)
