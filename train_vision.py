@@ -87,24 +87,15 @@ def train_vae(AE_type, network_args, experiment_name=None):
     print("\nBegin Training")
     try:
         while True:
-            epoch, e_step, images = next(train_iter)
-
-            _, loss_value = sess.run([train_op, network.loss],
-                                feed_dict={network.image: images})
-            loss_value = np.mean(loss_value)
-            network.update_params(step*batch_size)
-
-            if np.any(np.isnan(loss_value)):
-                raise ValueError('Loss value is NaN')
-
             valid_inter = 100
-            if step % (valid_inter*10) == 0:
+            ## PERFORM TEST SET EVALUATION
+            if step % (valid_inter*10) == 0: 
                 _, _, images = next(test_iter)
                 
                 # TODO: Test should use hard sample
                 [summary, test_loss] = sess.run([network.merged, network.loss], feed_dict={
                     network.image: images,
-                    network.is_training: True
+                    network.is_training: False
                 })
                 test_loss = np.mean(test_loss)
                 writer_test.add_summary(summary, step*batch_size)
@@ -114,6 +105,20 @@ def train_vae(AE_type, network_args, experiment_name=None):
                 network.print_summary()
                 print()
 
+
+            ## PERFORM TRAINING STEP
+            epoch, e_step, images = next(train_iter)
+            _, loss_value = sess.run([train_op, network.loss], feed_dict={
+            	network.image: images,
+            	network.is_training: True
+            	})
+            loss_value = np.mean(loss_value)
+            network.update_params(step*batch_size)
+
+            if np.any(np.isnan(loss_value)):
+                raise ValueError('Loss value is NaN')
+
+            ## COMPUTE TRAIN SET SUMMARY
             if step % valid_inter == 0 and step > 0:
                 print("Epoch {:5}, obs {:12}: Tr. loss {:9.3f}".format(
                     epoch, step*batch_size, loss_value), end=' ### ')
@@ -121,7 +126,7 @@ def train_vae(AE_type, network_args, experiment_name=None):
 
                 [summary] = sess.run([network.merged], feed_dict={
                     network.image: images,
-                    network.is_training: False
+                    network.is_training: True
                 })
                 writer.add_summary(summary, step*batch_size)
                 try:

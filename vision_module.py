@@ -194,23 +194,23 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
 
         # z = K.reshape(softmax(y / self.tau), (-1, N*M))
 
+        def hardsample(log_q_y):
+            log_q_y = tf.reshape(log_q_y, (-1, M))
+            z = tf.multinomial(log_q_y, 1)
+            z = tf.one_hot(z, M)
+            return z
 
-        # z = tf.cond(
-        #     self.is_training,
-        #     K.reshape(softmax(y / self.tau), (-1, N * M)),
-        #     log_q_y
-        # )
-        q_y = tf.reshape(q_y, (-1, M))
-        print(q_y)
-        z = tf.multinomial(tf.log(q_y), 1)
-        print(z)
-        z = tf.one_hot(z, M)
-        print(z)
-        z = tf.reshape(z, (-1, N, M))
-        print(z)
+        # TODO: make sure that hard sample works with differnet shapes
+
+
+        z = tf.cond(
+            self.is_training,
+            lambda: softmax(y / self.tau),
+            lambda: hardsample(log_q_y)
+        )
+        z = tf.reshape(z, (-1, N*M))
 
         return z
-
 
 
     def latent(self, x):
