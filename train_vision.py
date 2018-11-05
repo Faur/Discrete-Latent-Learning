@@ -66,7 +66,8 @@ def train_vae(AE_type, network_args, experiment_name=None):
     print()
 
     ################## SETTINGS #####################
-    batch_size = 64  # TODO: Use real
+    valid_inter = 100
+    batch_size = 64
     learning_rate = 0.001
     ### DATA
     train_iter, test_iter = data_utils.load_data(batch_size, 'mnist')
@@ -97,7 +98,6 @@ def train_vae(AE_type, network_args, experiment_name=None):
             if np.any(np.isnan(loss_value)):
                 raise ValueError('Loss value is NaN')
 
-            valid_inter = 100
             if step % (valid_inter*10) == 0:
                 _, _, images = next(test_iter)
                 

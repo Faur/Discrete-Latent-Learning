@@ -194,7 +194,6 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
 
         # z = K.reshape(softmax(y / self.tau), (-1, N*M))
 
-
         # z = tf.cond(
         #     self.is_training,
         #     K.reshape(softmax(y / self.tau), (-1, N * M)),
@@ -206,7 +205,7 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         print(z)
         z = tf.one_hot(z, M)
         print(z)
-        z = tf.reshape(z, (-1, N, M))
+        z = tf.reshape(z, (-1, N*M))
         print(z)
 
         return z
