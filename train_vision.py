@@ -9,15 +9,15 @@ np.random.seed(int(time.time()))
 tf.set_random_seed(int(time.time()))
 
 # TODO: Things to consider
-# * Use numpy for scalar tracking?
-# * Rec loss should be independeont of number of pixels
-# * KL loss should be independent of number of dimensions
+# * Don't do the one-hot encoding.
+
 # * Add weight decay / monitor weights
-# * Validation should use hard samples!
 # * save best validation score model
+
+# * Use numpy for scalar tracking?
 # * include a 'degree of determinism' measure in tensorboard.
 # * Exponential smoothing should be towards a point, not just end abruptly.
-# 		Parameters: What should it annealt towards? and how many steps before it is 1% away from that?
+#         Parameters: What should it annealt towards? and how many steps before it is 1% away from that?
 
 
 def create_or_load_vae(model_path, network_args):
@@ -88,7 +88,6 @@ def train_vae(AE_type, network_args, experiment_name=None):
     print("\nBegin Training")
     try:
         while True:
-            valid_inter = 100
             ## PERFORM TEST SET EVALUATION
             if step % (valid_inter*10) == 0: 
                 _, _, images = next(test_iter)
@@ -106,13 +105,12 @@ def train_vae(AE_type, network_args, experiment_name=None):
                 network.print_summary()
                 print()
 
-
             ## PERFORM TRAINING STEP
             epoch, e_step, images = next(train_iter)
             _, loss_value = sess.run([train_op, network.loss], feed_dict={
-            	network.image: images,
-            	network.is_training: True
-            	})
+                network.image: images,
+                network.is_training: True
+                })
             loss_value = np.mean(loss_value)
             network.update_params(step*batch_size)
 
