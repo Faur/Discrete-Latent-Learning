@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 import sys
 
+
 def data_iterator(data, batch_size):
     N = data.shape[0]
     epoch = 0
@@ -63,6 +64,7 @@ def lad_h5_as_np_array(data_path):
 
 
 def getSize_lol(lol):
+    """ Get size from list of list of objects"""
     size = 0
     # for ll in lol:  # runs
     #     for l in ll:  # observations

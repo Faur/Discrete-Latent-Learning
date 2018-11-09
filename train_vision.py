@@ -152,6 +152,7 @@ def train_vae(exp_param, experiment_name=None):
     except Exception as e:
         print("Exception: {}".format(e))
 
+
 if __name__ == '__main__':
 
     ## CONTINUOUS
