@@ -118,8 +118,12 @@ def train_vae(exp_param, experiment_name=None):
 
             ## PERFORM TRAINING STEP
             epoch, e_step, images = next(train_iter)
+            if exp_param.dataset == 'breakout':
+                # TODO: handle data for agent properly!
+                images = images[0]
+
             _, loss_value = sess.run([train_op, network.loss], feed_dict={
-                network.image: images,
+                network.raw_input: images,
                 network.is_training: True
                 })
             loss_value = np.mean(loss_value)
@@ -134,7 +138,7 @@ def train_vae(exp_param, experiment_name=None):
                 network.print_summary()
 
                 [summary] = sess.run([network.merged], feed_dict={
-                    network.image: images,
+                    network.raw_input: images,
                     network.is_training: True
                 })
                 writer.add_summary(summary, step*batch_size)
@@ -170,7 +174,7 @@ if __name__ == '__main__':
         raw_dim=raw_dim,
         net_dim=net_dim,  # very close to org aspect ration
         learning_rate=0.001,
-        batch_size=2,  # for testing
+#        batch_size=2,  # for testing
     )
     train_vae(exp_param)
 

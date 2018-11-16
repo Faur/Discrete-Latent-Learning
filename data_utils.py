@@ -20,6 +20,10 @@ def data_iterator_mnist(data, batch_size):
 
 
 def data_iterator_atari(data, batch_size):
+    def shuffle_data(obs, action, reward, done):
+        # TODO: shuffle properly!
+        np.range.shuffle(obs)
+        return obs, action, reward, done
     obs, action, reward, done = data
     N = obs.shape[0]
     epoch = 0
@@ -28,7 +32,7 @@ def data_iterator_atari(data, batch_size):
         if batch_size == -1:
             yield None, N, (obs, action, reward, done)
 
-        np.random.shuffle(data)
+        obs, action, reward, done = shuffle_data(obs, action, reward, done)
         for i in range(int(N / batch_size)):
             out_data = (
                 obs[i * batch_size:(i + 1) * batch_size],
@@ -39,7 +43,7 @@ def data_iterator_atari(data, batch_size):
             yield epoch, i * batch_size, out_data
 
 
-def load_data(train_batch_size, dataset='mnist', test_batch_size=-1):
+def load_data(train_batch_size, dataset='mnist', test_batch_size=64): #TODO: test_batch_size should be handled properly!
     if dataset == 'mnist':
         mnist = tf.keras.datasets.mnist
         (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -54,9 +58,11 @@ def load_data(train_batch_size, dataset='mnist', test_batch_size=-1):
         # TODO: This probably causes meomry issues
         x_train = lad_h5_as_array('Breakout_raw_train_')
         train_iter = data_iterator_atari(x_train, batch_size=(train_batch_size))
+        print('Train set loaded complete')
 
         x_test = lad_h5_as_array('Breakout_raw_valid_')
         test_iter = data_iterator_atari(x_test, batch_size=(test_batch_size))
+        print('Valid set loaded complete')
 
         return train_iter, test_iter
     else:
