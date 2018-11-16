@@ -1,6 +1,7 @@
 .idea/*
 logdir/*
 MNIST_data/*
+data/*
 saved_model_*/*
 
 # Byte-compiled / optimized / DLL files

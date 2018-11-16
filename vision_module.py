@@ -5,17 +5,21 @@ import os
 from keras import backend as K
 from keras.activations import softmax
 
+from exp_parameters import DecayParam
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 
 class BaseAutoEncoder(object):
     # Create model
-    def __init__(self, latent_dim, input_dim=(28, 28, 1), lr=0.00001):
-        self.latent_dim = latent_dim
+    def __init__(self, exp_param):
+        self.latent_dim = exp_param.latent
         self.tb_num_images = 3
 
         self.is_training = tf.placeholder(tf.bool, name='is_training')
-        self.img_channels = input_dim[-1]
-        self.image = tf.placeholder(tf.float32, (None,)+input_dim, name='image')
+        self.img_channels = exp_param.input_dim[-1]
+        self.raw_input = tf.placeholder(tf.float32, (None,) + exp_param.data_dim, name='image')
+        self.image = tf.placeholder(tf.float32, (None,)+exp_param.input_dim, name='image')
         #self.image = tf.placeholder(tf.float32, (64,)+input_dim, name='image')
         tf.summary.image('image', self.image, self.tb_num_images)
 
@@ -93,14 +97,8 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
     def __init__(self, *args, **kwargs):
         super(ContinuousAutoEncoder, self).__init__(*args, **kwargs)
 
-        #self.KL_boost0 = 0.01
-        #self.KL_boost_min = 0.001  # TODO: Check value!
-        self.KL_boost0 = 0.025
-        self.KL_boost_min = 0.0025  # TODO: Check value!
-        half_life = 5e5
-        self.KL_boost_anneal_rate = np.log(2)/half_life
-        self.KL_boost = K.variable(self.KL_boost_min, name="KL_boost_min")
-        tf.summary.scalar("hyper/KL_boost_C", tf.reduce_mean(self.KL_boost))
+        self.KL_boost = DecayParam(x0=0.01, x_min=0.001, half_life=5e5)  # TODO: should be handled by config
+        tf.summary.scalar("hyper/KL_boost_C", tf.reduce_mean(self.KL_boost.value))
 
         self.setup_network()
 
@@ -132,7 +130,7 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
     def KL_loss(self):
         z_mu, z_logvar = self.latent_var
         kl_loss = 0.5 * tf.reduce_mean(tf.exp(z_logvar) + z_mu**2 - 1. - z_logvar, 1)
-        return kl_loss*self.KL_boost
+        return kl_loss*self.KL_boost.value
 
     def compute_loss(self):
         rec_loss = self.reconstruction_loss()
@@ -145,8 +143,7 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
         return vae_loss
 
     def update_params(self, step):
-        K.set_value(self.KL_boost, 
-            np.max([self.KL_boost_min, self.KL_boost0 * np.exp(-self.KL_boost_anneal_rate * step)]))
+        self.KL_boost.update_param(step)
 
     def get_embedding(self, sess, observation):
         return sess.run(self.z, feed_dict={self.image: observation[None, :, :, :]})
@@ -159,26 +156,18 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
         return pred, mu, sigma, z
 
     def print_summary(self):
-        print("KL_boost {:5.4f}".format(K.get_value(self.KL_boost)))
+        print("KL_boost {:5.4f}".format(K.get_value(self.KL_boost.value)))
 
 
 class DiscreteAutoEncoder(BaseAutoEncoder):
     def __init__(self, *args, **kwargs):
         super(DiscreteAutoEncoder, self).__init__(*args, **kwargs)
 
-        self.tau0 = 5.0
-        self.tau_min = 0.01
-        half_life = 5e5
-        self.anneal_rate = np.log(2)/half_life
-        self.tau = K.variable(self.tau_min, name="taur")
-        tf.summary.scalar("hyper/tau", tf.reduce_mean(self.tau))
+        self.tau = DecayParam(x0=5.0, x_min=0.01, half_life=5e5)  # TODO: should be handled by config
+        tf.summary.scalar("hyper/tau", tf.reduce_mean(self.tau.value))
 
-        self.KL_boost0 = 0.25
-        self.KL_boost_min = 0.05  # TODO: Check value!
-        half_life = 5e5
-        self.KL_boost_anneal_rate = np.log(2)/half_life
-        self.KL_boost = K.variable(self.KL_boost_min, name="KL_boost_min")
-        tf.summary.scalar("hyper/KL_boost_D", tf.reduce_mean(self.KL_boost))
+        self.KL_boost = DecayParam(x0=0.5, x_min=0.1, half_life=5e5)  # TODO: should be handled by config
+        tf.summary.scalar("hyper/KL_boost_D", tf.reduce_mean(self.KL_boost.value))
 
         self.setup_network()
 
@@ -199,7 +188,7 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
 
         def gumble_softmax(y):
             print("gumble_softmax")
-            z = softmax(y / self.tau)
+            z = softmax(y / self.tau.value)
             z = tf.reshape(z, (-1, N*M))
             return z
 
@@ -265,7 +254,7 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         log_q_y = K.log(q_y + 1e-20)
         kl_loss = q_y * (log_q_y - K.log(1.0 / M))
         kl_loss = tf.reduce_mean(kl_loss, axis=(1, 2))
-        return kl_loss*self.KL_boost
+        return kl_loss*self.KL_boost.value
 
     def compute_loss(self):
         rec_loss = self.reconstruction_loss()
@@ -278,10 +267,8 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         return elbo
 
     def update_params(self, step):
-        K.set_value(self.tau,
-            np.max([self.tau_min, self.tau0 * np.exp(-self.anneal_rate * step)]))
-        K.set_value(self.KL_boost, 
-            np.max([self.KL_boost_min, self.KL_boost0 * np.exp(-self.KL_boost_anneal_rate * step)]))
+        self.tau.update_param(step)
+        self.KL_boost.update_param(step)
 
     def get_embedding(self, sess, observation):
         raise NotImplementedError
@@ -290,5 +277,5 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         raise NotImplementedError
 
     def print_summary(self):
-        print("tau {:5.4f}".format(K.get_value(self.tau)),
-              "- KL_boost {:5.4f}".format(K.get_value(self.KL_boost)))
+        print("tau {:5.4f}".format(K.get_value(self.tau.value)),
+              "- KL_boost {:5.4f}".format(K.get_value(self.KL_boost.value)))

@@ -1,6 +1,8 @@
 import h5py
 import numpy as np
 import tensorflow as tf
+import sys
+
 
 def data_iterator(data, batch_size):
     N = data.shape[0]
@@ -30,14 +32,17 @@ def load_data(train_batch_size, dataset='mnist', test_batch_size=-1):
         print(dataset)
         raise NotImplementedError
 
+
 def normalize_observation(observation):
-    obs = np.copy(observation)/255.
+    # obs = np.copy(observation)/255. # uses a lot more space!
+    obs = np.copy(observation)
     return obs
+
 
 def save_np_array_as_h5(file_name, data_as_array):
     # print("Format: (obs, action, reward, done)")
     data_path = './data/'+file_name+'.h5'
-    print("Saving dataset at: {}".format(data_path), end=' ... ')
+    # print("Saving dataset at: {}".format(data_path), end=' ... ')
 
     h5f = h5py.File(data_path, 'w')
     h5f.create_dataset('obs',    data=data_as_array[:, 0][0])
@@ -45,7 +50,7 @@ def save_np_array_as_h5(file_name, data_as_array):
     h5f.create_dataset('reward', data=data_as_array[:, 2].astype(float))
     h5f.create_dataset('done',   data=data_as_array[:, 3].astype(int))
     h5f.close()
-    print('Save complete')
+
 
 def lad_h5_as_np_array(data_path):
     h5f = h5py.File(data_path, 'r')
@@ -55,4 +60,28 @@ def lad_h5_as_np_array(data_path):
     data['reward'] = h5f['reward'][:]   # float
     data['done']   = h5f['done'][:]     # int
     h5f.close()
-    pass
+    return data
+
+
+def getSize_lol(lol):
+    """ Get size from list of list of objects"""
+    size = 0
+    # for ll in lol:  # runs
+    #     for l in ll:  # observations
+    for l in lol:  # observations
+        for t in l:  # individual elements
+                if type(t) is np.ndarray:
+                    size += t.nbytes
+                else:
+                    size += sys.getsizeof(t)
+
+    return size
+
+
+def sizeof_fmt(num, suffix='B'):
+    """ From: https://stackoverflow.com/questions/1094841/reusable-library-to-get-human-readable-version-of-file-size/1094933#1094933"""
+    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Yi', suffix)

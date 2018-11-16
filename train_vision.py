@@ -3,16 +3,17 @@ import numpy as np
 import time
 
 import data_utils
+from exp_parameters import ExpParam
 from vision_module import ContinuousAutoEncoder, DiscreteAutoEncoder
 
 np.random.seed(int(time.time()))
 tf.set_random_seed(int(time.time()))
 
 # TODO: Things to consider
-# * Don't do the one-hot encoding.
-
 # * Add weight decay / monitor weights
 # * save best validation score model
+
+# * Don't do the one-hot encoding.
 
 # * Use numpy for scalar tracking?
 # * include a 'degree of determinism' measure in tensorboard.
@@ -20,7 +21,7 @@ tf.set_random_seed(int(time.time()))
 #         Parameters: What should it annealt towards? and how many steps before it is 1% away from that?
 
 
-def create_or_load_vae(model_path, network_args):
+def create_or_load_vae(model_path, exp_param):
     graph = tf.Graph()
     with graph.as_default():  # Original formuation
         # graph.as_default()
@@ -32,10 +33,10 @@ def create_or_load_vae(model_path, network_args):
 
         if "continuous" in model_path:
             print("Continuous")
-            network = ContinuousAutoEncoder(network_args)
+            network = ContinuousAutoEncoder(exp_param)
         elif 'discrete' in model_path:
             print("Discrete")
-            network = DiscreteAutoEncoder(network_args)
+            network = DiscreteAutoEncoder(exp_param)
         else:
             print("Undefined")
             raise NotImplementedError
@@ -53,27 +54,30 @@ def create_or_load_vae(model_path, network_args):
         return sess, network, saver
 
 
-def train_vae(AE_type, network_args, experiment_name=None):
+def train_vae(exp_param, experiment_name=None):
     ### GENERAL SETUP
     if experiment_name is None:
-        experiment_name = AE_type +"_"+ str(time.time())
-    model_path = "saved_model_" + AE_type + "/"
+        experiment_name = exp_param.toString()
+    model_path = "saved_model_" + experiment_name + "/"
     model_name = model_path + experiment_name + '_model'
 
-    print('experiment_name', experiment_name)
-    print('model_path', model_path)
-    print('model_name', model_name)
+    print('experiment_name: ', experiment_name)
+    print('model_path: ', model_path)
+    print('model_name: ', model_name)
+    exp_param.print()
     print()
 
     ################## SETTINGS #####################
-    valid_inter = 100
-    batch_size = 64
-    learning_rate = 0.001
+    valid_inter = exp_param.valid_inter
+    batch_size = exp_param.batch_size
+    learning_rate = exp_param.learning_rate
+    data_set = exp_param.dataset
+
     ### DATA
-    train_iter, test_iter = data_utils.load_data(batch_size, 'mnist')
+    train_iter, test_iter = data_utils.load_data(batch_size, data_set)
 
     ### NETWORK
-    sess, network, saver = create_or_load_vae(model_path, network_args=network_args)
+    sess, network, saver = create_or_load_vae(model_path, exp_param=exp_param)
 
     # TODO: load or inferr gloabl step (don't start at zero!)
     global_step = tf.Variable(0, name='global_step', trainable=False)
@@ -151,50 +155,30 @@ def train_vae(AE_type, network_args, experiment_name=None):
 
 
 if __name__ == '__main__':
-    AE_types = ["continuous", "discrete"]
-    # TODO: Beter switching logic handling!
+
+    ## CONTINUOUS
+    exp_param = ExpParam(
+        lat_type="continuous",
+        dataset='mnist',
+        latent=[2],
+        data_dim=(28, 28, 1),
+        input_dim=(28, 28, 1),
+        learning_rate=0.001,
+        # batch_size=2,  # for testing
+    )
+    train_vae(exp_param)
 
 
-    network_args = [[2, 2]]
-    train_vae(AE_types[1], network_args, 'disc_2_2_' + str(time.time()))
+    ## DISCRETE
+    exp_param = ExpParam(
+        lat_type="discrete",
+        dataset='mnist',
+        latent=[[2, 2]],
+        data_dim=(28, 28, 1),
+        input_dim=(28, 28, 1),
+        learning_rate=0.001,
+        # batch_size=2,  # for testing
+    )
+    train_vae(exp_param)
 
-    network_args = [[4, 2]]
-    train_vae(AE_types[1], network_args, 'disc_4_2_' + str(time.time()))
-
-    network_args = [[8, 2]]
-    train_vae(AE_types[1], network_args, 'disc_8_2_' + str(time.time()))
-
-    network_args = [[16, 2]]
-    train_vae(AE_types[1], network_args, 'disc_16_2_' + str(time.time()))
-
-    network_args = [[32, 2]]
-    train_vae(AE_types[1], network_args, 'disc_32_2_' + str(time.time()))
-
-    network_args = [[64, 2]]
-    train_vae(AE_types[1], network_args, 'disc_64_2_' + str(time.time()))
-
-    network_args = [[128, 2]]
-    train_vae(AE_types[1], network_args, 'disc_128_2_' + str(time.time()))
-
-    network_args = [[256, 2]]
-    train_vae(AE_types[1], network_args, 'disc_256_2_' + str(time.time()))
-
-
-
-    network_args = [1]
-    train_vae(AE_types[0], network_args, 'continuous_1_' + str(time.time())) 
-
-    network_args = [2]
-    train_vae(AE_types[0], network_args, 'continuous_2_' + str(time.time())) 
-
-    network_args = [4]
-    train_vae(AE_types[0], network_args, 'continuous_4_' + str(time.time())) 
-
-    network_args = [8]
-    train_vae(AE_types[0], network_args, 'continuous_8_' + str(time.time())) 
-
-
-
-    #network_args = [[16, 2]]
-    #train_vae(AE_types[1], network_args, 
-    #	'disc_test_' + str(network_args) + "_" + str(time.time()))
+    print('Done')
