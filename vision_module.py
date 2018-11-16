@@ -93,8 +93,10 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
     def __init__(self, *args, **kwargs):
         super(ContinuousAutoEncoder, self).__init__(*args, **kwargs)
 
-        self.KL_boost0 = 0.01
-        self.KL_boost_min = 0.001  # TODO: Check value!
+        #self.KL_boost0 = 0.01
+        #self.KL_boost_min = 0.001  # TODO: Check value!
+        self.KL_boost0 = 0.025
+        self.KL_boost_min = 0.0025  # TODO: Check value!
         half_life = 5e5
         self.KL_boost_anneal_rate = np.log(2)/half_life
         self.KL_boost = K.variable(self.KL_boost_min, name="KL_boost_min")
@@ -171,8 +173,8 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         self.tau = K.variable(self.tau_min, name="taur")
         tf.summary.scalar("hyper/tau", tf.reduce_mean(self.tau))
 
-        self.KL_boost0 = 0.5
-        self.KL_boost_min = 0.1  # TODO: Check value!
+        self.KL_boost0 = 0.25
+        self.KL_boost_min = 0.05  # TODO: Check value!
         half_life = 5e5
         self.KL_boost_anneal_rate = np.log(2)/half_life
         self.KL_boost = K.variable(self.KL_boost_min, name="KL_boost_min")

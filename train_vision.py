@@ -89,6 +89,8 @@ def train_vae(AE_type, network_args, experiment_name=None):
     print("\nBegin Training")
     try:
         while True:
+            network.update_params(step*batch_size)
+
             ## PERFORM TEST SET EVALUATION
             if step % (valid_inter*10) == 0: 
                 _, _, images = next(test_iter)
@@ -113,7 +115,6 @@ def train_vae(AE_type, network_args, experiment_name=None):
                 network.is_training: True
                 })
             loss_value = np.mean(loss_value)
-            network.update_params(step*batch_size)
 
             if np.any(np.isnan(loss_value)):
                 raise ValueError('Loss value is NaN')
