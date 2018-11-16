@@ -50,19 +50,19 @@ def load_data(train_batch_size, dataset='mnist', test_batch_size=64): #TODO: tes
         x_train = np.expand_dims(x_train/255., -1)
         x_test = np.expand_dims(x_test/255., -1)
 
-        train_iter = data_iterator_mnist(x_train, batch_size=(train_batch_size))
+        train_iter = data_iterator_mnist(x_train, batch_size=train_batch_size)
         test_iter = data_iterator_mnist(x_test, batch_size=test_batch_size)
 
         return train_iter, test_iter
     elif dataset == 'breakout':
         # TODO: This probably causes meomry issues
         x_train = lad_h5_as_array('Breakout_raw_train_')
-        train_iter = data_iterator_atari(x_train, batch_size=(train_batch_size))
-        print('Train set loaded complete')
+        train_iter = data_iterator_atari(x_train, batch_size=train_batch_size)
+        print('Train set loaded complete.', x_train[0].shape[0], 'data points in total.')
 
         x_test = lad_h5_as_array('Breakout_raw_valid_')
-        test_iter = data_iterator_atari(x_test, batch_size=(test_batch_size))
-        print('Valid set loaded complete')
+        test_iter = data_iterator_atari(x_test, batch_size=test_batch_size)
+        print('Valid set loaded complete', x_test[0].shape[0], 'data points in total.')
 
         return train_iter, test_iter
     else:
