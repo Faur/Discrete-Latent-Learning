@@ -22,7 +22,7 @@ def data_iterator_mnist(data, batch_size):
 def data_iterator_atari(data, batch_size):
     def shuffle_data(obs, action, reward, done):
         # TODO: shuffle properly!
-        np.range.shuffle(obs)
+        np.random.shuffle(obs)
         return obs, action, reward, done
     obs, action, reward, done = data
     N = obs.shape[0]
