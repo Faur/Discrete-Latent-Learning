@@ -34,14 +34,14 @@ def create_or_load_vae(model_path, exp_param):
         # sess = tf.Session(config=config, graph=graph) # previous
         sess = tf.InteractiveSession(config=config, graph=graph)
 
-        if "continuous" in model_path:
+        if "continuous" == exp_param.valid_lat_type:
             print("Continuous")
             network = ContinuousAutoEncoder(exp_param)
-        elif 'discrete' in model_path:
+        elif 'discrete' == exp_param.valid_lat_type:
             print("Discrete")
             network = DiscreteAutoEncoder(exp_param)
         else:
-            print("Undefined")
+            print("Undefined", model_path)
             raise NotImplementedError
 
         init = tf.global_variables_initializer()
@@ -154,7 +154,7 @@ def train_vae(exp_param, experiment_name=None):
 
             step += 1
 
-            if epoch >= 100:
+            if epoch >= exp_param.max_epoch:
                 print("Max epoch reached!")
                 break
 

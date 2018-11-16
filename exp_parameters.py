@@ -25,8 +25,9 @@ class ExpParam():
                  raw_dim,  # the raw data
                  net_dim,  # the input to the newtork
                  learning_rate=0.001,
-                 valid_inter=100,
                  batch_size=64,
+                 valid_inter=100,
+                 max_epoch=100
                  ):
 
         self.created = str(int(time.time()))
