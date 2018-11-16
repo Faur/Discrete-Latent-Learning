@@ -13,15 +13,32 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 class BaseAutoEncoder(object):
     # Create model
     def __init__(self, exp_param):
+        self.dataset = exp_param.dataset
         self.latent_dim = exp_param.latent
         self.tb_num_images = 3
 
         self.is_training = tf.placeholder(tf.bool, name='is_training')
-        self.img_channels = exp_param.input_dim[-1]
-        self.raw_input = tf.placeholder(tf.float32, (None,) + exp_param.data_dim, name='image')
-        self.image = tf.placeholder(tf.float32, (None,)+exp_param.input_dim, name='image')
-        #self.image = tf.placeholder(tf.float32, (64,)+input_dim, name='image')
+        self.img_channels = exp_param.net_dim[-1]
+
+        self.raw_input = tf.placeholder(exp_param.raw_type, (None,) + exp_param.raw_dim, name='raw_input')
+        # tf.placeholder(tf.float32, (None,) + exp_param.data_dim, name='image')
+        # self.image = tf.placeholder(tf.float32, (None,)+exp_param.input_dim, name='image')
+        self.image = self.create_net_input(exp_param)
         tf.summary.image('image', self.image, self.tb_num_images)
+
+    def create_net_input(self, exp_param):
+        # if exp_param.input_dim is None:
+        #     net_input = tf.cast(self.raw_input, tf.float32, 'image')
+        # else:
+
+        net_input = tf.image.resize_images(
+            self.raw_input, size=exp_param.net_dim[:2], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        net_input = tf.cast(net_input, tf.float32)
+
+        if self.dataset == 'breakout':
+            net_input = tf.div(net_input, 255., 'normalize')
+
+        return net_input
 
     def setup_network(self):
         self.encoder_out = self.encoder(self.image)
@@ -35,29 +52,58 @@ class BaseAutoEncoder(object):
     def encoder(self, x):
         print('Encoder')
         print(x)
-        x = tf.layers.conv2d(x, filters=32, kernel_size=4, strides=2, padding='valid', activation=tf.nn.relu)
-        print(x)
-        x = tf.layers.conv2d(x, filters=64, kernel_size=4, strides=2, padding='valid', activation=tf.nn.relu)
-        print(x)
-        x = tf.layers.conv2d(x, filters=128, kernel_size=4, strides=2, padding='valid', activation=tf.nn.relu)
-        print(x)
-        print()
+        if self.dataset == 'mnist':
+            x = tf.layers.conv2d(x, filters=32, kernel_size=3, strides=2, padding='valid', activation=tf.nn.relu)
+            print(x)
+            x = tf.layers.conv2d(x, filters=64, kernel_size=3, strides=2, padding='valid', activation=tf.nn.relu)
+            print(x)
+            x = tf.layers.conv2d(x, filters=128, kernel_size=3, strides=2, padding='valid', activation=tf.nn.relu)
+            print(x)
+            print()
+        elif self.dataset == 'breakout':
+            x = tf.layers.conv2d(x, filters=8, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
+            print(x)
+            x = tf.layers.conv2d(x, filters=16, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
+            print(x)
+            x = tf.layers.conv2d(x, filters=32, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
+            print(x)
+            x = tf.layers.conv2d(x, filters=64, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
+            print(x)
+            x = tf.layers.conv2d(x, filters=128, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
+            print(x)
         return x
 
     def decoder(self, z):
         print('Decoder')
-        decoder_input_size = 128
+
+        first_conv_filters = 128
+        decoder_input_size = self.encoder_out.shape[1]*self.encoder_out.shape[2]*first_conv_filters
+
         x = tf.layers.dense(z, decoder_input_size, activation=None)
         print(x)
-        x = tf.reshape(x, [-1, 1, 1, decoder_input_size])
+        # x = tf.reshape(x, [-1, 1, 1, decoder_input_size])
+        x = tf.reshape(x, [
+            -1,
+            self.encoder_out.shape[1],
+            self.encoder_out.shape[2],
+            first_conv_filters
+        ])
         print(x)
-        x = tf.layers.conv2d_transpose(x, filters=64, kernel_size=5, strides=2, padding='valid', activation=tf.nn.relu)
+
+        x = tf.layers.conv2d_transpose(x, filters=64, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
         print(x)
-        x = tf.layers.conv2d_transpose(x, filters=32, kernel_size=5, strides=2, padding='valid', activation=tf.nn.relu)
+        x = tf.layers.conv2d_transpose(x, filters=32, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
         print(x)
-        x = tf.layers.conv2d_transpose(x, filters=16, kernel_size=4, strides=2, padding='valid', activation=tf.nn.relu)
+        x = tf.layers.conv2d_transpose(x, filters=16, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
         print(x)
-        x = tf.layers.conv2d(x, filters=self.img_channels, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
+        x = tf.layers.conv2d_transpose(x, filters=8, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
+        print(x)
+        x = tf.layers.conv2d_transpose(x, filters=8, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
+        print(x)
+        if self.dataset == 'mnist':
+            x = tf.layers.conv2d(x, filters=self.img_channels, kernel_size=5, strides=1, padding='valid', activation=tf.nn.relu)
+        elif self.dataset == 'breakout':
+            x = tf.layers.conv2d(x, filters=self.img_channels, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
         print(x)
         print()
         return x

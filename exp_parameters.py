@@ -21,22 +21,27 @@ class ExpParam():
                  lat_type,
                  latent,
                  dataset,
-                 input_dim,
-                 data_dim=None,
+                 raw_type,
+                 raw_dim,  # the raw data
+                 net_dim,  # the input to the newtork
                  learning_rate=0.001,
                  valid_inter=100,
                  batch_size=64,
                  ):
 
         self.created = str(int(time.time()))
-        assert lat_type in ["continuous", "discrete"], 'lat_type, ' + str(lat_type) + ' not understood.'
+        valid_lat_type = ["continuous", "discrete"]
+        assert lat_type in valid_lat_type, 'lat_type, ' + str(lat_type) + ' not understood.'
         self.lat_type = lat_type
         self.latent = latent
 
-        assert dataset in ['mnist'], 'dataset, ' + str(dataset) + ' not understood.'
+        valid_datasets = ['mnist', 'breakout']
+        assert dataset in valid_datasets, 'dataset, ' + str(dataset) + ' not understood.'
         self.dataset = dataset
-        self.input_dim = input_dim  # the input to the newtork
-        self.data_dim = data_dim if data_dim is not None else input_dim  # the raw input data
+        self.raw_type = raw_type
+        self.raw_dim = raw_dim
+        self.net_dim = net_dim
+        # self.data_dim = data_dim if data_dim is not None else input_dim
 
         self.learning_rate = learning_rate
         self.valid_inter = valid_inter

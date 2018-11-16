@@ -5,17 +5,38 @@ import os
 
 import tensorflow as tf
 
-def data_iterator(data, batch_size):
+
+def data_iterator_mnist(data, batch_size):
     N = data.shape[0]
     epoch = 0
     while True:
         epoch += 1
         if batch_size == -1:
-            yield None, data.shape[0], data
+            yield None, N, data
             
         np.random.shuffle(data)
         for i in range(int(N/batch_size)):
             yield epoch, i*batch_size, data[i*batch_size:(i+1)*batch_size]
+
+
+def data_iterator_atari(data, batch_size):
+    obs, action, reward, done = data
+    N = obs.shape[0]
+    epoch = 0
+    while True:
+        epoch += 1
+        if batch_size == -1:
+            yield None, N, (obs, action, reward, done)
+
+        np.random.shuffle(data)
+        for i in range(int(N / batch_size)):
+            out_data = (
+                obs[i * batch_size:(i + 1) * batch_size],
+                action[i * batch_size:(i + 1) * batch_size],
+                reward[i * batch_size:(i + 1) * batch_size],
+                done[i * batch_size:(i + 1) * batch_size],
+            )
+            yield epoch, i * batch_size, out_data
 
 
 def load_data(train_batch_size, dataset='mnist', test_batch_size=-1):
@@ -25,8 +46,17 @@ def load_data(train_batch_size, dataset='mnist', test_batch_size=-1):
         x_train = np.expand_dims(x_train/255., -1)
         x_test = np.expand_dims(x_test/255., -1)
 
-        train_iter = data_iterator(x_train, batch_size=(train_batch_size))
-        test_iter = data_iterator(x_test, batch_size=test_batch_size)
+        train_iter = data_iterator_mnist(x_train, batch_size=(train_batch_size))
+        test_iter = data_iterator_mnist(x_test, batch_size=test_batch_size)
+
+        return train_iter, test_iter
+    elif dataset == 'breakout':
+        # TODO: This probably causes meomry issues
+        x_train = lad_h5_as_array('Breakout_raw_train_')
+        train_iter = data_iterator_atari(x_train, batch_size=(train_batch_size))
+
+        x_test = lad_h5_as_array('Breakout_raw_train_')
+        test_iter = data_iterator_atari(x_test, batch_size=(test_batch_size))
 
         return train_iter, test_iter
     else:

@@ -98,10 +98,14 @@ def train_vae(exp_param, experiment_name=None):
             ## PERFORM TEST SET EVALUATION
             if step % (valid_inter*10) == 0: 
                 _, _, images = next(test_iter)
-                
+
+                if exp_param.dataset == 'breakout':
+                    # TODO: handle data for agent properly!
+                    images = images[0]
+
                 # TODO: Test should use hard sample
                 [summary, test_loss] = sess.run([network.merged, network.loss], feed_dict={
-                    network.image: images,
+                    network.raw_input: images,
                     network.is_training: False
                 })
                 test_loss = np.mean(test_loss)
@@ -150,35 +154,51 @@ def train_vae(exp_param, experiment_name=None):
     except (KeyboardInterrupt, SystemExit):
         print("Manual Interrupt")
 
-    except Exception as e:
-        print("Exception: {}".format(e))
+    # except Exception as e:
+    #     print("Exception: {}".format(e))
 
 
 if __name__ == '__main__':
 
-    ## CONTINUOUS
+    raw_dim = (210, 160, 3)
+    net_dim = (32*4, 32*3, 3)
     exp_param = ExpParam(
         lat_type="continuous",
-        dataset='mnist',
-        latent=[2],
-        data_dim=(28, 28, 1),
-        input_dim=(28, 28, 1),
+        dataset='breakout',
+        latent=[8],
+        raw_type=tf.float32,
+        raw_dim=raw_dim,
+        net_dim=net_dim,  # very close to org aspect ration
         learning_rate=0.001,
-        # batch_size=2,  # for testing
+        batch_size=2,  # for testing
     )
     train_vae(exp_param)
 
-
-    ## DISCRETE
-    exp_param = ExpParam(
-        lat_type="discrete",
-        dataset='mnist',
-        latent=[[2, 2]],
-        data_dim=(28, 28, 1),
-        input_dim=(28, 28, 1),
-        learning_rate=0.001,
-        # batch_size=2,  # for testing
-    )
-    train_vae(exp_param)
+    ## CONTINUOUS
+    # raw_dim = (28, 28, 1)
+    # net_dim = (28, 28, 1)
+    # exp_param = ExpParam(
+    #     lat_type="continuous",
+    #     dataset='mnist',
+    #     latent=[2],
+    #     raw_type=tf.float32,
+    #     raw_dim=raw_dim,
+    #     net_dim=net_dim,
+    #     learning_rate=0.001,
+    #     # batch_size=2,  # for testing
+    # )
+    # train_vae(exp_param)
+    #
+    # ## DISCRETE
+    # exp_param = ExpParam(
+    #     lat_type="discrete",
+    #     dataset='mnist',
+    #     latent=[[2, 2]],
+    #     input_dim=(28, 28, 1),
+    #     data_dim=(28, 28, 1),
+    #     learning_rate=0.001,
+    #     # batch_size=2,  # for testing
+    # )
+    # train_vae(exp_param)
 
     print('Done')
