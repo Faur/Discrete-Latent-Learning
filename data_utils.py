@@ -55,7 +55,7 @@ def load_data(train_batch_size, dataset='mnist', test_batch_size=-1):
         x_train = lad_h5_as_array('Breakout_raw_train_')
         train_iter = data_iterator_atari(x_train, batch_size=(train_batch_size))
 
-        x_test = lad_h5_as_array('Breakout_raw_train_')
+        x_test = lad_h5_as_array('Breakout_raw_valid_')
         test_iter = data_iterator_atari(x_test, batch_size=(test_batch_size))
 
         return train_iter, test_iter
@@ -111,6 +111,7 @@ def lad_h5_as_array(file_name, num_chars=4):
             data.append(lad_h5_as_list(data_path))
         else:
             break
+        print('Loaded:', data_path)
         i += 1
 
     # print("Format: (obs, action, reward, done)")
