@@ -10,7 +10,7 @@ class DecayParam():
         self.x_min = x_min
         self.half_life = half_life
         self.anneal_rate = np.log(2)/self.half_life
-        self.value = K.variable(self.x_min, name=name)
+        self.value = K.variable(x_min, name=name)
 
     def update_param(self, step):
         K.set_value(self.value, np.max([self.x_min, self.x0 * np.exp(-self.anneal_rate * step)]))

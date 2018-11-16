@@ -10,6 +10,9 @@ np.random.seed(int(time.time()))
 tf.set_random_seed(int(time.time()))
 
 # TODO: Things to consider
+# * Try making KL_boost = 0. Companre + KL should perhaps be increasing, rather than decreasing?
+# * Tensorboard measure: difference between two random prediction - pure prior check.
+
 # * Add weight decay / monitor weights
 # * save best validation score model
 
@@ -160,6 +163,7 @@ def train_vae(exp_param, experiment_name=None):
 
     # except Exception as e:
     #     print("Exception: {}".format(e))
+    sess.close()
 
 
 if __name__ == '__main__':
