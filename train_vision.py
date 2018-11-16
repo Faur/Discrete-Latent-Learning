@@ -10,8 +10,9 @@ np.random.seed(int(time.time()))
 tf.set_random_seed(int(time.time()))
 
 # TODO: Things to consider
+# * Do experiments on MNIST
 # * Try making KL_boost = 0. Companre + KL should perhaps be increasing, rather than decreasing?
-# * Tensorboard measure: difference between two random prediction - pure prior check.
+# * Consider more powerful decoder
 
 # * Add weight decay / monitor weights
 # * save best validation score model
@@ -23,6 +24,8 @@ tf.set_random_seed(int(time.time()))
 # * Exponential smoothing should be towards a point, not just end abruptly.
 #         Parameters: What should it annealt towards? and how many steps before it is 1% away from that?
 
+# * Tensorboard measure: difference between two random prediction - pure prior check.
+#   - This can be achieved by looking at q_y
 
 def create_or_load_vae(model_path, exp_param):
     graph = tf.Graph()

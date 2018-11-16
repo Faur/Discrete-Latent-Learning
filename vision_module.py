@@ -88,22 +88,28 @@ class BaseAutoEncoder(object):
             self.encoder_out.shape[2],
             first_conv_filters
         ])
+        # x = tf.layers.conv2d(x, filters=128, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
         print(x)
 
         x = tf.layers.conv2d_transpose(x, filters=64, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
+        # x = tf.layers.conv2d(x, filters=64, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
         print(x)
         x = tf.layers.conv2d_transpose(x, filters=32, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
+        # x = tf.layers.conv2d(x, filters=32, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
         print(x)
         x = tf.layers.conv2d_transpose(x, filters=16, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
+        # x = tf.layers.conv2d(x, filters=16, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
         print(x)
         x = tf.layers.conv2d_transpose(x, filters=8, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
+        # x = tf.layers.conv2d(x, filters=8, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
         print(x)
         x = tf.layers.conv2d_transpose(x, filters=8, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
+        # x = tf.layers.conv2d(x, filters=8, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
         print(x)
         if self.dataset == 'mnist':
-            x = tf.layers.conv2d(x, filters=self.img_channels, kernel_size=5, strides=1, padding='valid', activation=tf.nn.relu)
+            x = tf.layers.conv2d(x, filters=self.img_channels, kernel_size=1, strides=1, padding='valid', activation=tf.nn.relu)
         elif self.dataset == 'breakout':
-            x = tf.layers.conv2d(x, filters=self.img_channels, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
+            x = tf.layers.conv2d(x, filters=self.img_channels, kernel_size=1, strides=1, padding='same', activation=tf.nn.relu)
         print(x)
         print()
         return x
