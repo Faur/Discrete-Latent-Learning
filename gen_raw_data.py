@@ -86,14 +86,16 @@ def generate_raw_data(total_frames, postfix=''):
 
 if __name__ == '__main__':
     # TODO: This causes memory issues!
+    train_frames = 1e4
     train_frames = 1e6
-    # # train_frames = 1e4
     file_names = generate_raw_data(train_frames, 'train')
+    print('\n'*2)
 
+    valid_frames = 1e4
     valid_frames = 1e5
     file_names = generate_raw_data(valid_frames, 'valid')
 
-    if 1:
+    if 0:
         print("Load test - Begin.")
         file_name = file_names[0]
         data_path = './data/' + file_name + '.h5'

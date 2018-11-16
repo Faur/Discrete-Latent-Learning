@@ -1,8 +1,9 @@
 import h5py
 import numpy as np
-import tensorflow as tf
 import sys
+import os
 
+import tensorflow as tf
 
 def data_iterator(data, batch_size):
     N = data.shape[0]
@@ -45,23 +46,50 @@ def save_np_array_as_h5(file_name, data_as_array):
     # print("Saving dataset at: {}".format(data_path), end=' ... ')
 
     h5f = h5py.File(data_path, 'w')
-    h5f.create_dataset('obs',    data=data_as_array[:, 0][0])
+    h5f.create_dataset('obs',    data=np.array([i for i in data_as_array[:, 0]]))
     h5f.create_dataset('action', data=data_as_array[:, 1].astype(int))
     h5f.create_dataset('reward', data=data_as_array[:, 2].astype(float))
     h5f.create_dataset('done',   data=data_as_array[:, 3].astype(int))
     h5f.close()
 
 
-def lad_h5_as_np_array(data_path):
+def lad_h5_as_list(data_path):
     h5f = h5py.File(data_path, 'r')
-    data = {}
-    data['obs']    = h5f['obs'][:]      # float
-    data['action'] = h5f['action'][:]   # int
-    data['reward'] = h5f['reward'][:]   # float
-    data['done']   = h5f['done'][:]     # int
+    # data = {}
+    # data['obs']    = h5f['obs'][:]      # float
+    # data['action'] = h5f['action'][:]   # int
+    # data['reward'] = h5f['reward'][:]   # float
+    # data['done']   = h5f['done'][:]     # int
+    data = [
+        h5f['obs'][:],
+        h5f['action'][:],   # int
+        h5f['reward'][:],   # float
+        h5f['done'][:],     # int
+        ]
     h5f.close()
+
     return data
 
+
+def lad_h5_as_array(file_name, num_chars=4):
+    data = []
+    i = 0
+    while True:
+        data_path = './data/' + file_name + '{:04}'.format(i) + '.h5'
+
+        if os.path.isfile(data_path):
+            data.append(lad_h5_as_list(data_path))
+        else:
+            break
+        i += 1
+
+    # print("Format: (obs, action, reward, done)")
+    obs = np.vstack([data[i][0] for i in range(len(data))])
+    action = np.concatenate([data[i][1] for i in range(len(data))])
+    reward = np.concatenate([data[i][2] for i in range(len(data))])
+    done = np.concatenate([data[i][3] for i in range(len(data))])
+
+    return obs, action, reward, done
 
 def getSize_lol(lol):
     """ Get size from list of list of objects"""
