@@ -15,7 +15,7 @@ def generate_action(env):
 def gen_data(gen_args, render=False):
     """ Format: (obs, action, reward, done)
     """
-    batch_num, postfix, max_steps = gen_args
+    batch_num, postfix, max_steps, frame_skip = gen_args
 
     env = gym.make("Breakout-v0")
     obs_data = []
@@ -23,19 +23,21 @@ def gen_data(gen_args, render=False):
     obs, reward_sum, done = gym_utils.reset_env(env)
     obs = data_utils.normalize_observation(obs)
 
-    for i in range(max_steps):
+    i = 0
+    while len(obs_data) < max_steps:
         action = generate_action(env)
         obs_, reward, done, info = env.step(action)
-        obs_data.append((obs, action, reward, done))
+        if i % frame_skip == 0:
+            obs_data.append((obs, action, reward, done))
 
-        if render: env.render()
+            if render: env.render()
 
         if done:
             obs, reward_sum, done = gym_utils.reset_env(env)
             obs = data_utils.normalize_observation(obs)
-
         else:
             obs = data_utils.normalize_observation(obs_)
+        i += 1
 
     # data_as_array = np.concatenate(obs_data, 0)
     data_as_array = np.vstack(obs_data)
@@ -58,7 +60,7 @@ def gen_data(gen_args, render=False):
     return file_name
 
 
-def generate_raw_data(total_frames, postfix=''):
+def generate_raw_data(total_frames, postfix='', frame_skip=1):
     total_frames = int(total_frames)
 
     # 256*32*obs_mem_size ~ 0.75 GB
@@ -69,7 +71,7 @@ def generate_raw_data(total_frames, postfix=''):
     batch_len = [max_frames_per_thread]*num_batches + [frames_in_last_batch]
     if frames_in_last_batch != 0:
         num_batches += 1
-    gen_args = [(i, postfix, batch_len[i]) for i in range(num_batches)]
+    gen_args = [(i, postfix, batch_len[i], frame_skip) for i in range(num_batches)]
 
     print("Generating", postfix, "data for env CarRacing-v0")
     print("total_frames: ", total_frames)
@@ -85,10 +87,12 @@ def generate_raw_data(total_frames, postfix=''):
 
 
 if __name__ == '__main__':
+    frame_skip = 4
+
     # TODO: This causes memory issues!
     train_frames = 1e4
     train_frames = 1e6
-    file_names = generate_raw_data(train_frames, 'train')
+    file_names = generate_raw_data(train_frames, 'train', frame_skip)
     print('\n'*2)
 
     valid_frames = 1e4
