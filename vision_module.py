@@ -137,8 +137,9 @@ class BaseAutoEncoder(object):
             size=self.exp_param.net_dim[:2],
             method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-        err = (self.reconstructions - self.image) * mask
-        err = tf.square(err)
+        err = (self.reconstructions - self.image)
+        err = tf.square(err) 
+        err = err + err*mask
 
         return tf.reduce_mean(err, axis=[1, 2, 3]), tf.reduce_mean(err, axis=-1, keepdims=True)
 
@@ -209,6 +210,7 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
         tf.summary.scalar("train/rec_loss", tf.reduce_mean(rec_loss))
         tf.summary.scalar("train/total_loss", tf.reduce_mean(vae_loss))
         tf.summary.image('Error_image', err_img, self.tb_num_images)
+        tf.summary.histogram('train_C/err_vals', err_img)
         return vae_loss
 
     def update_params(self, step):
@@ -232,7 +234,7 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
     def __init__(self, *args, **kwargs):
         super(DiscreteAutoEncoder, self).__init__(*args, **kwargs)
 
-        self.tau = DecayParam(x0=5.0, x_min=0.01, half_life=5e5)  # TODO: should be handled by config
+        self.tau = DecayParam(x0=5.0, x_min=0.01, half_life=7.5e5)  # TODO: should be handled by config
         tf.summary.scalar("hyper/tau", tf.reduce_mean(self.tau.value))
 
         self.KL_boost = DecayParam(x0=0.5, x_min=0.1, half_life=5e5)  # TODO: should be handled by config
@@ -334,6 +336,7 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         tf.summary.scalar("train/rec_loss", tf.reduce_mean(rec_loss))
         tf.summary.scalar("train/total_loss", tf.reduce_mean(elbo))
         tf.summary.image('Error_image', err_img, self.tb_num_images)
+        tf.summary.histogram('train_C/err_vals', err_img)
         return elbo
 
     def update_params(self, step):

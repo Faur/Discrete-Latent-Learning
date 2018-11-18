@@ -104,7 +104,7 @@ def train_vae(exp_param, experiment_name=None):
             network.update_params(step*batch_size)
 
             ## PERFORM TEST SET EVALUATION
-            if step % (valid_inter*10) == 0: 
+            if step % (valid_inter*10) == 0 and step > 0: 
                 _, _, images = next(test_iter)
 
                 if exp_param.dataset == 'breakout':
@@ -121,7 +121,7 @@ def train_vae(exp_param, experiment_name=None):
                 test_loss = np.mean(test_loss)
                 writer_test.add_summary(summary, step*batch_size)
 
-                print("Epoch {:5}, obs {:12}: Te. loss {:9.3f}".format(
+                print("Epoch {:4}, obs {:10}: Te. loss {:9.6f}".format(
                     epoch, step*batch_size, test_loss), end=' ### ')
                 network.print_summary()
                 print()
@@ -134,7 +134,7 @@ def train_vae(exp_param, experiment_name=None):
 
             ## COMPUTE TRAIN SET SUMMARY
             if step % valid_inter == 0 and step > 0:
-                print("Epoch {:5}, obs {:12}: Tr. loss {:9.3f}".format(
+                print("Epoch {:4}, obs {:10}: Tr. loss {:9.6f}".format(
                     epoch, step*batch_size, loss_value), end=' ### ')
                 network.print_summary()
 

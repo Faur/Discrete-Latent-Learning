@@ -28,7 +28,7 @@ class ExpParam():
                  learning_rate=0.001,
                  batch_size=64,
                  valid_inter=100,
-                 max_epoch=100
+                 max_epoch=50
                  ):
 
         self.created = str(int(time.time()))
