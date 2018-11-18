@@ -1,5 +1,6 @@
 .idea/*
 logdir/*
+logdir*/*
 MNIST_data/*
 data/*
 saved_model_*/*
