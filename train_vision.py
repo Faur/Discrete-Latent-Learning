@@ -81,6 +81,8 @@ def train_vae(exp_param, experiment_name=None):
 
     ### DATA
     train_iter, test_iter = data_utils.load_data(batch_size, data_set)
+    ball_col = data_utils.ball_col
+    ball_loss_multiplier = exp_param.ball_loss_multiplier
 
     ### NETWORK
     sess, network, saver = create_or_load_vae(model_path, exp_param=exp_param)
@@ -108,10 +110,12 @@ def train_vae(exp_param, experiment_name=None):
                 if exp_param.dataset == 'breakout':
                     # TODO: handle data for agent properly!
                     images = images[0]
+                    masks = data_utils.mask_col(images, ball_col, ball_loss_multiplier)
 
                 # TODO: Test should use hard sample
                 [summary, test_loss] = sess.run([network.merged, network.loss], feed_dict={
                     network.raw_input: images,
+                    network.mask: masks,
                     network.is_training: False
                 })
                 test_loss = np.mean(test_loss)
@@ -122,11 +126,11 @@ def train_vae(exp_param, experiment_name=None):
                 network.print_summary()
                 print()
 
-
             epoch, e_step, images = next(train_iter)
             if exp_param.dataset == 'breakout':
                 # TODO: handle data for agent properly!
                 images = images[0]
+                masks = data_utils.mask_col(images, ball_col, ball_loss_multiplier)
 
             ## COMPUTE TRAIN SET SUMMARY
             if step % valid_inter == 0 and step > 0:
@@ -136,6 +140,7 @@ def train_vae(exp_param, experiment_name=None):
 
                 [summary] = sess.run([network.merged], feed_dict={
                     network.raw_input: images,
+                    network.mask: masks,
                     network.is_training: True
                 })
                 writer.add_summary(summary, step*batch_size)
@@ -149,6 +154,7 @@ def train_vae(exp_param, experiment_name=None):
             ## PERFORM TRAINING STEP
             _, loss_value = sess.run([train_op, network.loss], feed_dict={
                 network.raw_input: images,
+                network.mask: masks,
                 network.is_training: True
                 })
             loss_value = np.mean(loss_value)
