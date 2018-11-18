@@ -336,7 +336,7 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         tf.summary.scalar("train/rec_loss", tf.reduce_mean(rec_loss))
         tf.summary.scalar("train/total_loss", tf.reduce_mean(elbo))
         tf.summary.image('Error_image', err_img, self.tb_num_images)
-        tf.summary.histogram('train_C/err_vals', err_img)
+        tf.summary.histogram('train_D/err_vals', err_img)
         return elbo
 
     def update_params(self, step):
