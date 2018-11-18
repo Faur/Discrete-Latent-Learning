@@ -61,10 +61,12 @@ def load_data(train_batch_size, dataset='mnist', test_batch_size=64): #TODO: tes
         x_train = lad_h5_as_array('Breakout_raw_train_')
         train_iter = data_iterator_atari(x_train, batch_size=train_batch_size)
         print('Train set loaded complete.', x_train[0].shape[0], 'data points in total.')
+        print()
 
         x_test = lad_h5_as_array('Breakout_raw_valid_')
         test_iter = data_iterator_atari(x_test, batch_size=test_batch_size)
         print('Valid set loaded complete', x_test[0].shape[0], 'data points in total.')
+        print()
 
         return train_iter, test_iter
     else:
