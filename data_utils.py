@@ -6,6 +6,8 @@ import os
 import tensorflow as tf
 
 
+ball_col = [200, 72, 72]  # Color of the ball in Breakout
+
 def data_iterator_mnist(data, batch_size):
     N = data.shape[0]
     epoch = 0
@@ -150,3 +152,25 @@ def sizeof_fmt(num, suffix='B'):
             return "%3.1f%s%s" % (num, unit, suffix)
         num /= 1024.0
     return "%.1f%s%s" % (num, 'Yi', suffix)
+
+
+def find_unique_colors(img):
+    # https://stackoverflow.com/questions/24780697/numpy-unique-list-of-colors-in-the-image
+    img_r = img.reshape(-1, img.shape[-1])
+    unique_col = np.unique(img_r, axis=0)
+    return unique_col
+
+
+def mask_col(img, col, mul, flat_output=False):
+    if len(img.shape) == 3:
+        img = np.expand_dims(img, 0)
+
+    out = []
+    for i in range(img.shape[0]):
+        o = np.zeros_like(img[0])
+        o[np.where((img[i, :, :, 0] == col[0]) & (img[i, :, :, 1] == col[1]) & (img[i, :, :, 2] == col[2]))] = mul
+        if flat_output and len(o.shape) == 3:
+            o = o[:, :, 0]
+        out.append(o)
+
+    return np.array(out).astype(np.float32)

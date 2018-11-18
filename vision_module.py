@@ -13,6 +13,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 class BaseAutoEncoder(object):
     # Create model
     def __init__(self, exp_param):
+        self.exp_param = exp_param
         self.dataset = exp_param.dataset
         self.latent_dim = exp_param.latent
         self.tb_num_images = 3
@@ -20,25 +21,29 @@ class BaseAutoEncoder(object):
         self.is_training = tf.placeholder(tf.bool, name='is_training')
         self.img_channels = exp_param.net_dim[-1]
 
-        self.raw_input = tf.placeholder(exp_param.raw_type, (None,) + exp_param.raw_dim, name='raw_input')
-        # tf.placeholder(tf.float32, (None,) + exp_param.data_dim, name='image')
-        # self.image = tf.placeholder(tf.float32, (None,)+exp_param.input_dim, name='image')
-        self.image = self.create_net_input(exp_param)
+        self.raw_input, self.image, self.mask = self.create_net_input()
         tf.summary.image('image', self.image, self.tb_num_images)
 
-    def create_net_input(self, exp_param):
-        # if exp_param.input_dim is None:
-        #     net_input = tf.cast(self.raw_input, tf.float32, 'image')
-        # else:
+    def create_net_input(self):
+        # tf.placeholder(tf.float32, (None,) + exp_param.data_dim, name='image')
+        # self.image = tf.placeholder(tf.float32, (None,)+exp_param.input_dim, name='image')
+        raw_input = tf.placeholder(self.exp_param.raw_type, (None,) + self.exp_param.raw_dim, name='raw_input')
 
         net_input = tf.image.resize_images(
-            self.raw_input, size=exp_param.net_dim[:2], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+            raw_input,
+            size=self.exp_param.net_dim[:2],
+            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         net_input = tf.cast(net_input, tf.float32)
-
         if self.dataset == 'breakout':
             net_input = tf.div(net_input, 255., 'normalize')
 
-        return net_input
+        mask = tf.placeholder(tf.float32, (None,) + self.exp_param.raw_dim, 'Rec_loss_mask')
+        # mask = tf.image.resize_images(
+        #     mask,
+        #     size=exp_param.net_dim[:2],
+        #     method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+
+        return raw_input, net_input, mask
 
     def setup_network(self):
         self.encoder_out = self.encoder(self.image)
@@ -121,10 +126,21 @@ class BaseAutoEncoder(object):
         raise NotImplementedError
 
     def reconstruction_loss(self):
-        logits_flat = tf.layers.flatten(self.reconstructions)
-        labels_flat = tf.layers.flatten(self.image)
-        rec_loss = tf.reduce_mean(tf.square(logits_flat - labels_flat), axis=1)
-        return rec_loss
+        # logits_flat = tf.layers.flatten(self.reconstructions)
+        # labels_flat = tf.layers.flatten(self.image)
+        # mask = tf.layers.flatten(self.mask)
+        # err = logits_flat - labels_flat
+        # err = err * mask
+
+        mask = tf.image.resize_images(
+            self.mask,
+            size=self.exp_param.net_dim[:2],
+            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+
+        err = (self.reconstructions - self.image) * mask
+        err = tf.square(err)
+
+        return tf.reduce_mean(err, axis=[1, 2, 3]), tf.reduce_mean(err, axis=-1, keepdims=True)
 
     def KL_loss(self):
         raise NotImplementedError
@@ -185,13 +201,14 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
         return kl_loss*self.KL_boost.value
 
     def compute_loss(self):
-        rec_loss = self.reconstruction_loss()
+        rec_loss, err_img = self.reconstruction_loss()
         kl_loss = self.KL_loss()
         vae_loss = tf.reduce_mean(rec_loss + kl_loss)
 
         tf.summary.scalar("train/KL_loss", tf.reduce_mean(kl_loss))
         tf.summary.scalar("train/rec_loss", tf.reduce_mean(rec_loss))
         tf.summary.scalar("train/total_loss", tf.reduce_mean(vae_loss))
+        tf.summary.image('Error_image', err_img, self.tb_num_images)
         return vae_loss
 
     def update_params(self, step):
@@ -309,13 +326,14 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         return kl_loss*self.KL_boost.value
 
     def compute_loss(self):
-        rec_loss = self.reconstruction_loss()
+        rec_loss, err_img = self.reconstruction_loss()
         kl_loss = self.KL_loss()
         elbo = tf.reduce_mean(rec_loss + kl_loss)
 
         tf.summary.scalar("train/KL_loss", tf.reduce_mean(kl_loss))
         tf.summary.scalar("train/rec_loss", tf.reduce_mean(rec_loss))
         tf.summary.scalar("train/total_loss", tf.reduce_mean(elbo))
+        tf.summary.image('Error_image', self.err_img, self.tb_num_images)
         return elbo
 
     def update_params(self, step):
