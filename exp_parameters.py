@@ -47,6 +47,7 @@ class ExpParam():
         self.learning_rate = learning_rate
         self.valid_inter = valid_inter
         self.batch_size = batch_size
+        self.max_epoch = max_epoch
 
     def toString(self):
         out = self.dataset + '_' + self.lat_type

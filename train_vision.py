@@ -37,10 +37,10 @@ def create_or_load_vae(model_path, exp_param):
         # sess = tf.Session(config=config, graph=graph) # previous
         sess = tf.InteractiveSession(config=config, graph=graph)
 
-        if "continuous" == exp_param.valid_lat_type:
+        if "continuous" == exp_param.lat_type:
             print("Continuous")
             network = ContinuousAutoEncoder(exp_param)
-        elif 'discrete' == exp_param.valid_lat_type:
+        elif 'discrete' == exp_param.lat_type:
             print("Discrete")
             network = DiscreteAutoEncoder(exp_param)
         else:
@@ -122,20 +122,11 @@ def train_vae(exp_param, experiment_name=None):
                 network.print_summary()
                 print()
 
-            ## PERFORM TRAINING STEP
+
             epoch, e_step, images = next(train_iter)
             if exp_param.dataset == 'breakout':
                 # TODO: handle data for agent properly!
                 images = images[0]
-
-            _, loss_value = sess.run([train_op, network.loss], feed_dict={
-                network.raw_input: images,
-                network.is_training: True
-                })
-            loss_value = np.mean(loss_value)
-
-            if np.any(np.isnan(loss_value)):
-                raise ValueError('Loss value is NaN')
 
             ## COMPUTE TRAIN SET SUMMARY
             if step % valid_inter == 0 and step > 0:
@@ -155,11 +146,21 @@ def train_vae(exp_param, experiment_name=None):
                 except:
                     print("\nFAILED TO SAVE MODEL!\n")
 
-            step += 1
+            ## PERFORM TRAINING STEP
+            _, loss_value = sess.run([train_op, network.loss], feed_dict={
+                network.raw_input: images,
+                network.is_training: True
+                })
+            loss_value = np.mean(loss_value)
+
+            if np.any(np.isnan(loss_value)):
+                raise ValueError('Loss value is NaN')
 
             if epoch >= exp_param.max_epoch:
                 print("Max epoch reached!")
                 break
+
+            step += 1
 
     except (KeyboardInterrupt, SystemExit):
         print("Manual Interrupt")
