@@ -24,6 +24,7 @@ class ExpParam():
                  raw_type,
                  raw_dim,  # the raw data
                  net_dim,  # the input to the newtork
+                 ball_loss_multiplier=1.,
                  learning_rate=0.001,
                  batch_size=64,
                  valid_inter=100,
@@ -45,6 +46,8 @@ class ExpParam():
         # self.data_dim = data_dim if data_dim is not None else input_dim
 
         self.learning_rate = learning_rate
+        self.ball_loss_multiplier = ball_loss_multiplier
+
         self.valid_inter = valid_inter
         self.batch_size = batch_size
         self.max_epoch = max_epoch

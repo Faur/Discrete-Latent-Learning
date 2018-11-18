@@ -82,7 +82,7 @@ def train_vae(exp_param, experiment_name=None):
     ### DATA
     train_iter, test_iter = data_utils.load_data(batch_size, data_set)
     ball_col = data_utils.ball_col
-    ball_loss_multiplier = 10
+    ball_loss_multiplier = exp_param.ball_loss_multiplier
 
     ### NETWORK
     sess, network, saver = create_or_load_vae(model_path, exp_param=exp_param)
