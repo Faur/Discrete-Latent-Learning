@@ -22,19 +22,32 @@ def data_iterator_mnist(data, batch_size):
 
 
 def data_iterator_atari(data, batch_size):
-    def shuffle_data(obs, action, reward, done):
-        # TODO: shuffle properly!
+    def shuffle_data(obs, obs_mask, action, reward, done):
+        ## https://stackoverflow.com/questions/4601373/better-way-to-shuffle-two-numpy-arrays-in-unison
+        # p = np.random.permutation(obs.shape[0])
+        # return obs[p], obs_mask[p], action[p], reward[p], done[p]
+        rng_state = np.random.get_state()
         np.random.shuffle(obs)
-        return obs, action, reward, done
+        np.random.set_state(rng_state)
+        np.random.shuffle(obs_mask)
+        np.random.set_state(rng_state)
+        np.random.shuffle(action)
+        np.random.set_state(rng_state)
+        np.random.shuffle(reward)
+        np.random.set_state(rng_state)
+        np.random.shuffle(done)
+        np.random.set_state(rng_state)
+        return obs, obs_mask, action, reward, done
+
     obs, obs_mask, action, reward, done = data
     N = obs.shape[0]
     epoch = 0
     while True:
         epoch += 1
         if batch_size == -1:
-            yield None, N, (obs, action, reward, done)
+            yield None, N, (obs, obs_mask, action, reward, done)
 
-        obs, action, reward, done = shuffle_data(obs, action, reward, done)
+        obs, obs_mask, action, reward, done = shuffle_data(obs, obs_mask, action, reward, done)
         for i in range(int(N / batch_size)):
             out_data = (
                 obs[i * batch_size:(i + 1) * batch_size],

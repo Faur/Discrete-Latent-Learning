@@ -105,14 +105,15 @@ def train_vae(exp_param, experiment_name=None):
 
             if step % (valid_inter*10) == 0 and step > 0:
                 ## PERFORM TEST SET EVALUATION
-                _, _, images = next(test_iter)
+                _, _, data = next(test_iter)
 
                 if exp_param.dataset == 'breakout':
                     # TODO: handle data for agent properly!
-                    images = images[0]
-                    masks = images[1] * exp_param.rec_loss_multiplier
+                    images = data[0]
+                    masks = data[1] * exp_param.rec_loss_multiplier
                     # masks = data_utils.mask_col(images, ball_col, rec_loss_multiplier)
                 else:
+                    images = data
                     masks = None
 
                 # TODO: Test should use hard sample
@@ -130,13 +131,14 @@ def train_vae(exp_param, experiment_name=None):
                 print()
 
             ## GET TRAIN BATCH
-            epoch, e_step, images = next(train_iter)
+            epoch, e_step, data = next(train_iter)
             if exp_param.dataset == 'breakout':
                 # TODO: handle data for agent properly!
-                images = images[0]
-                masks = images[1] * exp_param.rec_loss_multiplier
+                images = data[0]
+                masks = data[1] * exp_param.rec_loss_multiplier
                 # masks = data_utils.mask_col(images, ball_col, rec_loss_multiplier)
             else:
+                images = data
                 masks = None
 
             ## COMPUTE TRAIN SET SUMMARY
@@ -167,7 +169,7 @@ def train_vae(exp_param, experiment_name=None):
             loss_value = np.mean(loss_value)
 
             if np.any(np.isnan(loss_value)):
-                raise ValueError('Loss value is NaN')
+                raise ValueError('loss_value is NaN')
 
             if epoch >= exp_param.max_epoch:
                 print("Max epoch reached!")
