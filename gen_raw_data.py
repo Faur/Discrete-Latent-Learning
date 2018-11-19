@@ -3,6 +3,9 @@ import multiprocessing as mp
 import gym
 import gym.spaces #TODO: remove this (only used to suppress warning
 
+import scipy.ndimage
+import matplotlib.pyplot as plt
+
 import gym_utils
 import data_utils
 
@@ -27,8 +30,13 @@ def gen_data(gen_args, render=False):
     while len(obs_data) < max_steps:
         action = generate_action(env)
         obs_, reward, done, info = env.step(action)
+
+        obs_mask = np.abs(obs_.astype(float) - obs)
+        obs_mask = np.mean(obs_mask, -1, keepdims=True) / 255.
+        obs_mask = scipy.ndimage.filters.gaussian_filter(obs_mask, 5)
+
         if i % frame_skip == 0:
-            obs_data.append((obs, action, reward, done))
+            obs_data.append((obs, obs_mask, action, reward, done))
 
             if render: env.render()
 
@@ -52,7 +60,7 @@ def gen_data(gen_args, render=False):
     file_name = 'Breakout_raw_{}_{:04d}'.format(postfix, batch_num)
     data_utils.save_np_array_as_h5(file_name, data_as_array)
     # print('Generated dataset with ', data_as_array.shape[0], "observations.")
-    # print("Format: (obs, action, reward, done)")
+    # print("Format: (obs, obs_mask, action, reward, done)")
     print('Saved batch: {:4}'.format(batch_num), '-', file_name)
 
     env.close()
@@ -90,22 +98,24 @@ if __name__ == '__main__':
     frame_skip = 4
 
     # TODO: This causes memory issues!
+    train_frames = 5e4
     train_frames = 1e4
-    train_frames = 1e6
+    # train_frames = 1e2
     file_names = generate_raw_data(train_frames, 'train', frame_skip)
     print('\n'*2)
 
     valid_frames = 1e4
-    valid_frames = 1e5
+    # valid_frames = 1e2
     file_names = generate_raw_data(valid_frames, 'valid')
 
-    if 0:
+    if 1:
         print("Load test - Begin.")
         file_name = file_names[0]
         data_path = './data/' + file_name + '.h5'
         print(data_path)
-        data = data_utils.lad_h5_as_np_array(data_path)
+        data = data_utils.lad_h5_as_list(data_path)
         print('data', type(data))
+        print('data[0]', type(data[0]))
         print("Load test - Success!")
 
 

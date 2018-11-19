@@ -87,9 +87,10 @@ def save_np_array_as_h5(file_name, data_as_array):
 
     h5f = h5py.File(data_path, 'w')
     h5f.create_dataset('obs',    data=np.array([i for i in data_as_array[:, 0]]))
-    h5f.create_dataset('action', data=data_as_array[:, 1].astype(int))
-    h5f.create_dataset('reward', data=data_as_array[:, 2].astype(float))
-    h5f.create_dataset('done',   data=data_as_array[:, 3].astype(int))
+    h5f.create_dataset('obs_mask',    data=np.array([i for i in data_as_array[:, 1]]))
+    h5f.create_dataset('action', data=data_as_array[:, 2].astype(int))
+    h5f.create_dataset('reward', data=data_as_array[:, 3].astype(float))
+    h5f.create_dataset('done',   data=data_as_array[:, 4].astype(int))
     h5f.close()
 
 
@@ -102,6 +103,7 @@ def lad_h5_as_list(data_path):
     # data['done']   = h5f['done'][:]     # int
     data = [
         h5f['obs'][:],
+        h5f['obs_mask'][:],
         h5f['action'][:],   # int
         h5f['reward'][:],   # float
         h5f['done'][:],     # int
@@ -126,11 +128,12 @@ def lad_h5_as_array(file_name, num_chars=4):
 
     # print("Format: (obs, action, reward, done)")
     obs = np.vstack([data[i][0] for i in range(len(data))])
-    action = np.concatenate([data[i][1] for i in range(len(data))])
-    reward = np.concatenate([data[i][2] for i in range(len(data))])
-    done = np.concatenate([data[i][3] for i in range(len(data))])
+    obs_mask = np.vstack([data[i][1] for i in range(len(data))])
+    action = np.concatenate([data[i][2] for i in range(len(data))])
+    reward = np.concatenate([data[i][3] for i in range(len(data))])
+    done = np.concatenate([data[i][4] for i in range(len(data))])
 
-    return obs, action, reward, done
+    return obs, obs_mask, action, reward, done
 
 def getSize_lol(lol):
     """ Get size from list of list of objects"""

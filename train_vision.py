@@ -103,14 +103,15 @@ def train_vae(exp_param, experiment_name=None):
         while True:
             network.update_params(step*batch_size)
 
-            ## PERFORM TEST SET EVALUATION
-            if step % (valid_inter*10) == 0 and step > 0: 
+            if step % (valid_inter*10) == 0 and step > 0:
+                ## PERFORM TEST SET EVALUATION
                 _, _, images = next(test_iter)
 
                 if exp_param.dataset == 'breakout':
                     # TODO: handle data for agent properly!
                     images = images[0]
-                    masks = data_utils.mask_col(images, ball_col, ball_loss_multiplier)
+                    masks = images[1] * exp_param.rec_loss_multiplier
+                    # masks = data_utils.mask_col(images, ball_col, rec_loss_multiplier)
                 else:
                     masks = None
 
@@ -128,11 +129,15 @@ def train_vae(exp_param, experiment_name=None):
                 network.print_summary()
                 print()
 
+            ## GET TRAIN BATCH
             epoch, e_step, images = next(train_iter)
             if exp_param.dataset == 'breakout':
                 # TODO: handle data for agent properly!
                 images = images[0]
-                masks = data_utils.mask_col(images, ball_col, ball_loss_multiplier)
+                masks = images[1] * exp_param.rec_loss_multiplier
+                # masks = data_utils.mask_col(images, ball_col, rec_loss_multiplier)
+            else:
+                masks = None
 
             ## COMPUTE TRAIN SET SUMMARY
             if step % valid_inter == 0 and step > 0:
