@@ -37,7 +37,7 @@ class BaseAutoEncoder(object):
         if self.dataset == 'breakout':
             net_input = tf.div(net_input, 255., 'normalize')
 
-        mask_in = tf.placeholder(tf.float32, (None,) + self.exp_param.raw_dim, 'Rec_loss_mask')
+        mask_in = tf.placeholder(tf.float32, (None,) + self.exp_param.raw_dim[:2] + (1,), 'Rec_loss_mask')
         mask_net = tf.image.resize_images(
             mask_in,
             size=self.exp_param.net_dim[:2],
@@ -54,7 +54,9 @@ class BaseAutoEncoder(object):
         self.loss, self.loss_img = self.compute_loss()
 
         mask_norm = self.mask_net/(tf.reduce_max(self.mask_net)+1e-9)
-        loss_img_3ch = tf.tile(self.loss_img/(tf.reduce_max(self.loss_img)+1e-9), [1, 1, 1, 3])
+        mask_norm = tf.tile(mask_norm, [1, 1, 1, 3])
+        loss_img_3ch = self.loss_img/(tf.reduce_max(self.loss_img)+1e-9)
+        loss_img_3ch = tf.tile(loss_img_3ch, [1, 1, 1, 3])
         sum_img_top = tf.concat([self.image, self.reconstructions], 2)
         sum_img_bot = tf.concat([mask_norm, loss_img_3ch], 2)
         self.sum_img = tf.concat([sum_img_top, sum_img_bot], 1)

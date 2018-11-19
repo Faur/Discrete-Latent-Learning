@@ -26,7 +26,7 @@ def data_iterator_atari(data, batch_size):
         # TODO: shuffle properly!
         np.random.shuffle(obs)
         return obs, action, reward, done
-    obs, action, reward, done = data
+    obs, obs_mask, action, reward, done = data
     N = obs.shape[0]
     epoch = 0
     while True:
@@ -38,6 +38,7 @@ def data_iterator_atari(data, batch_size):
         for i in range(int(N / batch_size)):
             out_data = (
                 obs[i * batch_size:(i + 1) * batch_size],
+                obs_mask[i * batch_size:(i + 1) * batch_size],
                 action[i * batch_size:(i + 1) * batch_size],
                 reward[i * batch_size:(i + 1) * batch_size],
                 done[i * batch_size:(i + 1) * batch_size],
