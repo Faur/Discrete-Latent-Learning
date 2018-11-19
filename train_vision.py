@@ -94,8 +94,8 @@ def train_vae(exp_param, experiment_name=None):
     train_op = tf.train.AdamOptimizer(learning_rate).minimize(network.loss, global_step=global_step)
     tf.global_variables_initializer().run()
 
-    writer = tf.summary.FileWriter('logdir/'+experiment_name)
-    writer_test = tf.summary.FileWriter('logdir/'+experiment_name+'_test')
+    writer = tf.summary.FileWriter('logdir/train_'+experiment_name)
+    writer_test = tf.summary.FileWriter('logdir/valid_'+experiment_name)
     step = global_step.eval()
 
     print("\nBegin Training")

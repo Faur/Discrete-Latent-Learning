@@ -24,6 +24,7 @@ class ExpParam():
                  raw_type,
                  raw_dim,  # the raw data
                  net_dim,  # the input to the newtork
+                 name_prefix='',
                  ball_loss_multiplier=1.,
                  learning_rate=0.001,
                  batch_size=64,
@@ -45,6 +46,8 @@ class ExpParam():
         self.net_dim = net_dim
         # self.data_dim = data_dim if data_dim is not None else input_dim
 
+        self.name_prefix = name_prefix
+
         self.learning_rate = learning_rate
         self.ball_loss_multiplier = ball_loss_multiplier
 
@@ -54,6 +57,8 @@ class ExpParam():
 
     def toString(self):
         out = self.dataset + '_' + self.lat_type
+
+        out += self.name_prefix
 
         out += '_LAT'
         if self.lat_type == 'discrete':
