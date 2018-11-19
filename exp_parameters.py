@@ -16,7 +16,7 @@ class DecayParam():
         K.set_value(self.value, np.max([self.x_min, self.x0 * np.exp(-self.anneal_rate * step)]))
 
 
-class ExpParam():
+class ExpParam:
     def __init__(self,
                  lat_type,
                  latent,

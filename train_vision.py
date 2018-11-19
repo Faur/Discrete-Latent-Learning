@@ -64,7 +64,7 @@ def train_vae(exp_param, experiment_name=None):
     ### GENERAL SETUP
     if experiment_name is None:
         experiment_name = exp_param.toString()
-    model_path = "saved_model_" + experiment_name + "/"
+    model_path = "saved_model/" + experiment_name + "/"
     model_name = model_path + experiment_name + '_model'
 
     print('experiment_name: ', experiment_name)
@@ -111,11 +111,13 @@ def train_vae(exp_param, experiment_name=None):
                     # TODO: handle data for agent properly!
                     images = images[0]
                     masks = data_utils.mask_col(images, ball_col, ball_loss_multiplier)
+                else:
+                    masks = None
 
                 # TODO: Test should use hard sample
                 [summary, test_loss] = sess.run([network.merged, network.loss], feed_dict={
                     network.raw_input: images,
-                    network.mask: masks,
+                    network.mask_in: masks,
                     network.is_training: False
                 })
                 test_loss = np.mean(test_loss)
@@ -140,7 +142,7 @@ def train_vae(exp_param, experiment_name=None):
 
                 [summary] = sess.run([network.merged], feed_dict={
                     network.raw_input: images,
-                    network.mask: masks,
+                    network.mask_in: masks,
                     network.is_training: True
                 })
                 writer.add_summary(summary, step*batch_size)
@@ -154,7 +156,7 @@ def train_vae(exp_param, experiment_name=None):
             ## PERFORM TRAINING STEP
             _, loss_value = sess.run([train_op, network.loss], feed_dict={
                 network.raw_input: images,
-                network.mask: masks,
+                network.mask_in: masks,
                 network.is_training: True
                 })
             loss_value = np.mean(loss_value)

@@ -21,7 +21,7 @@ class BaseAutoEncoder(object):
         self.is_training = tf.placeholder(tf.bool, name='is_training')
         self.img_channels = exp_param.net_dim[-1]
 
-        self.raw_input, self.image, self.mask = self.create_net_input()
+        self.raw_input, self.image, self.mask_in, self.mask_net = self.create_net_input()
         tf.summary.image('image', self.image, self.tb_num_images)
 
     def create_net_input(self):
@@ -37,13 +37,13 @@ class BaseAutoEncoder(object):
         if self.dataset == 'breakout':
             net_input = tf.div(net_input, 255., 'normalize')
 
-        mask = tf.placeholder(tf.float32, (None,) + self.exp_param.raw_dim, 'Rec_loss_mask')
-        # mask = tf.image.resize_images(
-        #     mask,
-        #     size=exp_param.net_dim[:2],
-        #     method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        mask_in = tf.placeholder(tf.float32, (None,) + self.exp_param.raw_dim, 'Rec_loss_mask')
+        mask_net = tf.image.resize_images(
+            mask_in,
+            size=self.exp_param.net_dim[:2],
+            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-        return raw_input, net_input, mask
+        return raw_input, net_input, mask_in, mask_net
 
     def setup_network(self):
         self.encoder_out = self.encoder(self.image)
@@ -51,7 +51,15 @@ class BaseAutoEncoder(object):
         self.reconstructions = self.decoder(self.z)
         tf.summary.image('reconstructions', self.reconstructions, self.tb_num_images)
 
-        self.loss = self.compute_loss()
+        self.loss, self.loss_img = self.compute_loss()
+
+        mask_norm = self.mask_net/(tf.reduce_max(self.mask_net)+1e-9)
+        loss_img_3ch = tf.tile(self.loss_img/(tf.reduce_max(self.loss_img)+1e-9), [1, 1, 1, 3])
+        sum_img_top = tf.concat([self.image, self.reconstructions], 2)
+        sum_img_bot = tf.concat([mask_norm, loss_img_3ch], 2)
+        self.sum_img = tf.concat([sum_img_top, sum_img_bot], 1)
+        tf.summary.image('awesome_summary', self.sum_img, self.tb_num_images)
+
         self.merged = tf.summary.merge_all()
 
     def encoder(self, x):
@@ -132,14 +140,9 @@ class BaseAutoEncoder(object):
         # err = logits_flat - labels_flat
         # err = err * mask
 
-        mask = tf.image.resize_images(
-            self.mask,
-            size=self.exp_param.net_dim[:2],
-            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-
         err = (self.reconstructions - self.image)
-        err = tf.square(err) 
-        err = err + err*mask
+        err = tf.square(err)
+        err = err + err*self.mask_net
 
         return tf.reduce_mean(err, axis=[1, 2, 3]), tf.reduce_mean(err, axis=-1, keepdims=True)
 
@@ -211,7 +214,7 @@ class ContinuousAutoEncoder(BaseAutoEncoder):
         tf.summary.scalar("train/total_loss", tf.reduce_mean(vae_loss))
         tf.summary.image('Error_image', err_img, self.tb_num_images)
         tf.summary.histogram('train_C/err_vals', err_img)
-        return vae_loss
+        return vae_loss, err_img
 
     def update_params(self, step):
         self.KL_boost.update_param(step)
@@ -337,7 +340,7 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         tf.summary.scalar("train/total_loss", tf.reduce_mean(elbo))
         tf.summary.image('Error_image', err_img, self.tb_num_images)
         tf.summary.histogram('train_D/err_vals', err_img)
-        return elbo
+        return elbo, err_img
 
     def update_params(self, step):
         self.tau.update_param(step)
