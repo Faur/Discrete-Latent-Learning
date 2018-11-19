@@ -82,7 +82,7 @@ def train_vae(exp_param, experiment_name=None):
     ### DATA
     train_iter, test_iter = data_utils.load_data(batch_size, data_set)
     ball_col = data_utils.ball_col
-    ball_loss_multiplier = exp_param.ball_loss_multiplier
+    rec_loss_multiplier = exp_param.rec_loss_multiplier
 
     ### NETWORK
     sess, network, saver = create_or_load_vae(model_path, exp_param=exp_param)
@@ -184,46 +184,75 @@ def train_vae(exp_param, experiment_name=None):
 
 
 if __name__ == '__main__':
-
     raw_dim = (210, 160, 3)
     net_dim = (32*4, 32*3, 3)
+
+    ## DISCRETE
+    rec_loss_multipliers = [1, 2, 4, 8, 16, 32, 64, 128, 256]
+    rec_loss_multipliers = [0]
+    for x in rec_loss_multipliers:
+        exp_param = ExpParam(
+            lat_type="discrete",
+            dataset='breakout',
+            name_prefix='_BLM'+str(x),
+            latent=[[32*128, 2]],
+            raw_type=tf.uint8,
+            raw_dim=raw_dim,
+            net_dim=net_dim,  # very close to org aspect ration
+            learning_rate=0.001,
+            rec_loss_multiplier=x,
+    #        batch_size=2,  # for testing
+        )
+        train_vae(exp_param)
+
+        exp_param = ExpParam(
+            lat_type="continuous",
+            dataset='breakout',
+            name_prefix='_BLM'+str(x),
+            latent=[128],
+            raw_type=tf.uint8,
+            raw_dim=raw_dim,
+            net_dim=net_dim,  # very close to org aspect ration
+            learning_rate=0.001,
+            rec_loss_multiplier=x,
+    #        batch_size=2,  # for testing
+        )
+        train_vae(exp_param)
+
+
+
+
+    '''
+    ############### MNIST ###############
+    ## CONTINUOUS
+    raw_dim = (28, 28, 1)
+    net_dim = (28, 28, 1)
+
     exp_param = ExpParam(
         lat_type="continuous",
-        dataset='breakout',
+        dataset='mnist',
         latent=[8],
         raw_type=tf.float32,
         raw_dim=raw_dim,
-        net_dim=net_dim,  # very close to org aspect ration
+        net_dim=net_dim,
         learning_rate=0.001,
-#        batch_size=2,  # for testing
+        # batch_size=2,  # for testing
     )
     train_vae(exp_param)
-
-    ## CONTINUOUS
-    # raw_dim = (28, 28, 1)
-    # net_dim = (28, 28, 1)
-    # exp_param = ExpParam(
-    #     lat_type="continuous",
-    #     dataset='mnist',
-    #     latent=[2],
-    #     raw_type=tf.float32,
-    #     raw_dim=raw_dim,
-    #     net_dim=net_dim,
-    #     learning_rate=0.001,
-    #     # batch_size=2,  # for testing
-    # )
-    # train_vae(exp_param)
-    #
-    # ## DISCRETE
-    # exp_param = ExpParam(
-    #     lat_type="discrete",
-    #     dataset='mnist',
-    #     latent=[[2, 2]],
-    #     input_dim=(28, 28, 1),
-    #     data_dim=(28, 28, 1),
-    #     learning_rate=0.001,
-    #     # batch_size=2,  # for testing
-    # )
-    # train_vae(exp_param)
+    
+    ## DISCRETE
+    
+    exp_param = ExpParam(
+        lat_type="discrete",
+        dataset='mnist',
+        latent=[[8*32, 2]],
+        raw_type=tf.float32,
+        raw_dim=raw_dim,
+        net_dim=net_dim,
+        learning_rate=0.001,
+        # batch_size=2,  # for testing
+    )
+    train_vae(exp_param)
+    '''
 
     print('Done')

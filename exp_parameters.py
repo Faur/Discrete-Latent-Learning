@@ -25,7 +25,7 @@ class ExpParam:
                  raw_dim,  # the raw data
                  net_dim,  # the input to the newtork
                  name_prefix='',
-                 ball_loss_multiplier=1.,
+                 rec_loss_multiplier=1.,
                  learning_rate=0.001,
                  batch_size=64,
                  valid_inter=100,
@@ -49,7 +49,7 @@ class ExpParam:
         self.name_prefix = name_prefix
 
         self.learning_rate = learning_rate
-        self.ball_loss_multiplier = ball_loss_multiplier
+        self.rec_loss_multiplier = rec_loss_multiplier
 
         self.valid_inter = valid_inter
         self.batch_size = batch_size
