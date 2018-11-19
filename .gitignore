@@ -4,6 +4,7 @@ logdir*/*
 MNIST_data/*
 data/*
 saved_model_*/*
+saved_model/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
