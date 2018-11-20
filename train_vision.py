@@ -7,7 +7,7 @@ from exp_parameters import ExpParam
 from vision_module import ContinuousAutoEncoder, DiscreteAutoEncoder
 
 np.random.seed(int(time.time()))
-tf.set_random_seed(int(time.time()))
+tf.set_random_seed(int(time.time())+1)
 
 # TODO: Things to consider
 # * Do experiments on MNIST
@@ -178,7 +178,7 @@ def train_vae(exp_param, experiment_name=None):
             step += 1
 
     except (KeyboardInterrupt, SystemExit):
-        print("Manual Interrupt")
+        print("Manual Interrupt" + '\n'*5)
 
     # except Exception as e:
     #     print("Exception: {}".format(e))
