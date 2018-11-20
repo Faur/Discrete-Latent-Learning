@@ -31,9 +31,13 @@ def gen_data(gen_args, render=False):
         action = generate_action(env)
         obs_, reward, done, info = env.step(action)
 
-        obs_mask = np.abs(obs_.astype(float) - obs)
-        obs_mask = np.mean(obs_mask, -1, keepdims=True) / 255.
-        obs_mask = scipy.ndimage.filters.gaussian_filter(obs_mask, 5)
+        obs_mask = obs_.astype(int) - obs
+        # obs_mask = np.abs(obs_mask)
+        obs_mask = obs_mask * (obs_mask < 0)
+        obs_mask = np.mean(obs_mask, -1, keepdims=True).astype(np.uint8)
+        # obs_mask = obs_mask / 255.
+        # obs_mask = scipy.ndimage.filters.gaussian_filter(obs_mask, 5)
+        # plt.imshow(obs_mask[:, :, 0]); plt.figure(); plt.imshow(obs); plt.show()
 
         if i % frame_skip == 0:
             obs_data.append((obs, obs_mask, action, reward, done))
@@ -81,13 +85,15 @@ def generate_raw_data(total_frames, postfix='', frame_skip=1):
         num_batches += 1
     gen_args = [(i, postfix, batch_len[i], frame_skip) for i in range(num_batches)]
 
+    num_threads = mp.cpu_count()-1
     print("Generating", postfix, "data for env CarRacing-v0")
     print("total_frames: ", total_frames)
     print('max_frames_per_thread', max_frames_per_thread)
     print("num_batches:", num_batches, '(',batch_len,')')
+    print("num_threads:", num_threads)
     print('...')
 
-    with mp.Pool(mp.cpu_count()-1) as p:
+    with mp.Pool(num_threads) as p:
         # data = p.map(gen_data, gen_args)
         file_names = p.map(gen_data, gen_args)
 
