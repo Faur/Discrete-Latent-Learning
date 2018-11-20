@@ -26,6 +26,7 @@ class ExpParam:
                  net_dim,  # the input to the newtork
                  name_prefix='',
                  rec_loss_multiplier=1.,
+                 g_std=0,
                  learning_rate=0.001,
                  batch_size=64,
                  valid_inter=100,
@@ -50,6 +51,8 @@ class ExpParam:
 
         self.learning_rate = learning_rate
         self.rec_loss_multiplier = rec_loss_multiplier
+        self.g_size = int(g_std*3)
+        self.g_std = g_std if g_std > 0 else 1
 
         self.valid_inter = valid_inter
         self.batch_size = batch_size

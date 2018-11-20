@@ -37,13 +37,31 @@ class BaseAutoEncoder(object):
         if self.dataset == 'breakout':
             net_input = tf.div(net_input, 255., 'normalize')
 
-        mask_in = tf.placeholder(tf.float32, (None,) + self.exp_param.raw_dim[:2] + (1,), 'Rec_loss_mask')
+        mask_in = tf.placeholder(tf.uint8, (None,) + self.exp_param.raw_dim[:2] + (1,), 'Rec_loss_mask')
         mask_net = tf.image.resize_images(
             mask_in,
             size=self.exp_param.net_dim[:2],
             method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        mask_net = tf.cast(mask_net, tf.float32)/255.
+        g_kernel = self.gaussian_kernel(self.exp_param.g_size, 0, self.exp_param.g_std)
+        mask_net = tf.nn.conv2d(mask_net, g_kernel, strides=[1, 1, 1, 1], padding="SAME")
+        mask_net = mask_net * self.exp_param.g_std / 0.3989  # https://stats.stackexchange.com/questions/143631/height-of-a-normal-distribution-curve
 
         return raw_input, net_input, mask_in, mask_net
+
+
+    def gaussian_kernel(self,
+                        size: int,
+                        mean: float,
+                        std: float,):
+        """ Makes 2D gaussian Kernel for convolution.
+            https://stackoverflow.com/questions/52012657/how-to-make-a-2d-gaussian-filter-in-tensorflow
+        """
+        d = tf.distributions.Normal(float(mean), float(std))
+        vals = d.prob(tf.range(start=-size, limit=size + 1, dtype=tf.float32))
+        gauss_kernel = tf.einsum('i,j->ij', vals, vals)
+
+        return (gauss_kernel / tf.reduce_sum(gauss_kernel))[:, :, tf.newaxis, tf.newaxis]
 
     def setup_network(self):
         self.encoder_out = self.encoder(self.image)

@@ -190,36 +190,40 @@ if __name__ == '__main__':
     net_dim = (32*4, 32*3, 3)
 
     ## DISCRETE
-    rec_loss_multipliers = [1, 2, 4, 8, 16, 32, 64, 128, 256]
-    rec_loss_multipliers = [0]
-    for x in rec_loss_multipliers:
-        exp_param = ExpParam(
-            lat_type="discrete",
-            dataset='breakout',
-            name_prefix='_BLM'+str(x),
-            latent=[[32*128, 2]],
-            raw_type=tf.uint8,
-            raw_dim=raw_dim,
-            net_dim=net_dim,  # very close to org aspect ration
-            learning_rate=0.001,
-            rec_loss_multiplier=x,
-    #        batch_size=2,  # for testing
-        )
-        train_vae(exp_param)
+    rec_loss_multipliers = [1, 2, 4, 8, 16, 32, 64, 128, 256, 0]
+    g_std = [0,1,2]
 
-        exp_param = ExpParam(
-            lat_type="continuous",
-            dataset='breakout',
-            name_prefix='_BLM'+str(x),
-            latent=[128],
-            raw_type=tf.uint8,
-            raw_dim=raw_dim,
-            net_dim=net_dim,  # very close to org aspect ration
-            learning_rate=0.001,
-            rec_loss_multiplier=x,
-    #        batch_size=2,  # for testing
-        )
-        train_vae(exp_param)
+    for std in g_std:
+        for x in rec_loss_multipliers:
+            exp_param = ExpParam(
+                lat_type="discrete",
+                dataset='breakout',
+                name_prefix='_BLM'+str(x)+'_STD'+str(std),
+                latent=[[32*128, 2]],
+                raw_type=tf.uint8,
+                raw_dim=raw_dim,
+                net_dim=net_dim,  # very close to org aspect ration
+                g_std=std,
+                learning_rate=0.001,
+                rec_loss_multiplier=x,
+               batch_size=2,  # for testing
+            )
+            train_vae(exp_param)
+
+            exp_param = ExpParam(
+                lat_type="continuous",
+                dataset='breakout',
+                name_prefix='_BLM'+str(x)+'_STD'+str(std),
+                latent=[128],
+                raw_type=tf.uint8,
+                raw_dim=raw_dim,
+                net_dim=net_dim,  # very close to org aspect ration
+                learning_rate=0.001,
+                g_std=std,
+                rec_loss_multiplier=x,
+               batch_size=2,  # for testing
+            )
+            train_vae(exp_param)
 
 
 

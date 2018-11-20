@@ -76,7 +76,7 @@ def generate_raw_data(total_frames, postfix='', frame_skip=1):
     total_frames = int(total_frames)
 
     # 256*32*obs_mem_size ~ 0.75 GB
-    max_eps_len = 256  # doesn't actually matter!
+    max_eps_len = 512  # doesn't actually matter - just max file size thing
     max_frames_per_thread = max_eps_len*32
     num_batches = total_frames // max_frames_per_thread
     frames_in_last_batch = total_frames - max_frames_per_thread * (total_frames // max_frames_per_thread)
