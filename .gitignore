@@ -5,6 +5,7 @@ MNIST_data/*
 data/*
 saved_model_*/*
 saved_model/*
+media/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
