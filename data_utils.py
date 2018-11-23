@@ -21,7 +21,7 @@ def data_iterator_mnist(data, batch_size):
             yield epoch, i*batch_size, data[i*batch_size:(i+1)*batch_size]
 
 
-def data_iterator_atari(data, batch_size):
+def data_iterator_atari(data, batch_size, train=True):
     def shuffle_data(obs, obs_mask, action, reward, done):
         ## https://stackoverflow.com/questions/4601373/better-way-to-shuffle-two-numpy-arrays-in-unison
         # p = np.random.permutation(obs.shape[0])
@@ -47,7 +47,8 @@ def data_iterator_atari(data, batch_size):
         if batch_size == -1:
             yield None, N, (obs, obs_mask, action, reward, done)
 
-        obs, obs_mask, action, reward, done = shuffle_data(obs, obs_mask, action, reward, done)
+        if train:
+            obs, obs_mask, action, reward, done = shuffle_data(obs, obs_mask, action, reward, done)
         for i in range(int(N / batch_size)):
             out_data = (
                 obs[i * batch_size:(i + 1) * batch_size],
@@ -59,7 +60,7 @@ def data_iterator_atari(data, batch_size):
             yield epoch, i * batch_size, out_data
 
 
-def load_data(train_batch_size, dataset='mnist', test_batch_size=64): #TODO: test_batch_size should be handled properly!
+def load_data(train_batch_size, dataset='mnist', test_batch_size=64):  #TODO: test_batch_size should be handled properly (=-1)
     if dataset == 'mnist':
         mnist = tf.keras.datasets.mnist
         (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -78,7 +79,7 @@ def load_data(train_batch_size, dataset='mnist', test_batch_size=64): #TODO: tes
         print()
 
         x_test = lad_h5_as_array('Breakout_raw_valid_')
-        test_iter = data_iterator_atari(x_test, batch_size=test_batch_size)
+        test_iter = data_iterator_atari(x_test, batch_size=test_batch_size, train=False)
         print('Valid set loaded complete', x_test[0].shape[0], 'data points in total.')
         print()
 
