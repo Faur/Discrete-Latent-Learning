@@ -75,8 +75,10 @@ class BaseAutoEncoder(object):
 
         mask_norm = self.mask_net/(tf.reduce_max(self.mask_net)+1e-9)
         mask_norm = tf.tile(mask_norm, [1, 1, 1, 3])
+
         loss_img_3ch = self.loss_img/(tf.reduce_max(self.loss_img)+1e-9)
         loss_img_3ch = tf.tile(loss_img_3ch, [1, 1, 1, 3])
+
         sum_img_top = tf.concat([self.image, self.reconstructions], 2)
         sum_img_bot = tf.concat([mask_norm, loss_img_3ch], 2)
         self.sum_img = tf.concat([sum_img_top, sum_img_bot], 1)
