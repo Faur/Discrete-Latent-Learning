@@ -30,7 +30,8 @@ class ExpParam:
                  learning_rate=0.001,
                  batch_size=64,
                  valid_inter=100,
-                 max_epoch=50
+                 max_epoch=0,
+                 max_example=0
                  ):
 
         self.created = str(int(time.time()))
@@ -57,6 +58,7 @@ class ExpParam:
         self.valid_inter = valid_inter
         self.batch_size = batch_size
         self.max_epoch = max_epoch
+        self.max_example = max_example
 
     def toString(self):
         out = self.dataset + '_' + self.lat_type

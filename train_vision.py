@@ -172,8 +172,12 @@ def train_vae(exp_param, experiment_name=None):
             if np.any(np.isnan(loss_value)):
                 raise ValueError('loss_value is NaN')
 
-            if epoch >= exp_param.max_epoch:
+            if epoch >= exp_param.max_epoch and 0 < exp_param.max_epoch:
                 print("Max epoch reached!")
+                break
+
+            if step*batch_size >= exp_param.max_example and 0 < exp_param.max_example:
+                print("Max example reached!")
                 break
 
             step += 1
