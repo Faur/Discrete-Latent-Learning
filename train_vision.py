@@ -111,6 +111,7 @@ def train_vae(exp_param, experiment_name=None):
                     # TODO: handle data for agent properly!
                     images = data[0]
                     masks = data[1] * exp_param.rec_loss_multiplier
+                    # masks = data[1]  # TODO: Test that this works! (currently 'exp_param.rec_loss_multiplier' is multiplied twice'
                     # masks = data_utils.mask_col(images, ball_col, rec_loss_multiplier)
                 else:
                     images = data
