@@ -1,8 +1,8 @@
 import numpy as np
 import tensorflow as tf
-from models.base_policy import BasePolicy
-from layers import conv2d, flatten, dense
-from layers import orthogonal_initializer, noise_and_argmax
+from A2C.models.base_policy import BasePolicy
+from A2C.layers import conv2d, flatten, dense
+from A2C.layers import orthogonal_initializer, noise_and_argmax
 
 
 class CNNPolicy(BasePolicy):
