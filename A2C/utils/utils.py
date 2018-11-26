@@ -6,7 +6,8 @@ from easydict import EasyDict as edict
 from pprint import pprint
 import argparse
 import json
-import sys
+import sys as sys
+
 
 def parse_args():
     """

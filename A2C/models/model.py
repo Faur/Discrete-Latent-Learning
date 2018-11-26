@@ -1,6 +1,6 @@
 import tensorflow as tf
-from layers import mse, openai_entropy
-from utils.utils import find_trainable_variables
+from A2C.layers import mse, openai_entropy
+from A2C.utils.utils import find_trainable_variables
 
 
 class Model:
@@ -98,7 +98,7 @@ class Model:
 
     @staticmethod
     def policy_name_parser(policy_name):
-        from models.cnn_policy import CNNPolicy
+        from A2C.models.cnn_policy import CNNPolicy
         policy_to_class = {'CNNPolicy': CNNPolicy}
 
         if policy_name in policy_to_class:

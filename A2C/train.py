@@ -3,10 +3,10 @@ import time
 import numpy as np
 from tqdm import tqdm
 
-from base_train import BaseTrainer
-from envs.env_summary_logger import EnvSummaryLogger
-from utils.lr_decay import LearningRateDecay
-from utils.utils import create_list_dirs
+from A2C.base_train import BaseTrainer
+from A2C.envs.env_summary_logger import EnvSummaryLogger
+from A2C.utils.lr_decay import LearningRateDecay
+from A2C.utils.utils import create_list_dirs
 
 
 class Trainer(BaseTrainer):

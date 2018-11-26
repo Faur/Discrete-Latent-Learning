@@ -1,8 +1,10 @@
 import pickle
-from envs.subproc_vec_env import *
-from models.model import Model
-from train import Trainer
-from utils.utils import set_all_global_seeds
+
+from A2C.envs.gym_env import *
+from A2C.envs.subproc_vec_env import SubprocVecEnv
+from A2C.models.model import Model
+from A2C.train import Trainer
+from A2C.utils.utils import set_all_global_seeds
 
 
 class A2C:
@@ -101,7 +103,7 @@ class A2C:
 
     @staticmethod
     def env_name_parser(env_name):
-        from envs.gym_env import GymEnv
+
         envs_to_class = {'GymEnv': GymEnv}
 
         if env_name in envs_to_class:
