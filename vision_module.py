@@ -48,8 +48,6 @@ class BaseAutoEncoder(object):
             g_kernel = self.gaussian_kernel(self.exp_param.g_size, 0, self.exp_param.g_std)
             mask_net = tf.nn.conv2d(mask_net, g_kernel, strides=[1, 1, 1, 1], padding="SAME")
         mask_net = mask_net * self.exp_param.g_std / 0.3989  # https://stats.stackexchange.com/questions/143631/height-of-a-normal-distribution-curve
-        mask_net += mask_net*self.exp_param.rec_loss_multiplier
-
         return raw_input, net_input, mask_in, mask_net
 
 
