@@ -11,7 +11,13 @@ import data_utils
 
 
 def generate_action(env):
-    a = env.action_space.sample()
+    random_action = False
+    if random_action:
+        a = env.action_space.sample()
+    # else:
+        # actions, values, states = self.model.step_policy.step(observation_s, states, dones)
+        # genereate action using only the testingphase of A2C
+    
     return a
 
 
@@ -23,11 +29,18 @@ def gen_data(gen_args, render=False):
     env = gym.make("Breakout-v0")
     obs_data = []
 
+    # load A2C agent
+    
+    
     obs, reward_sum, done = gym_utils.reset_env(env)
     obs = data_utils.normalize_observation(obs)
 
     i = 0
     while len(obs_data) < max_steps:
+        # pass additional arguments
+        
+        
+        # 
         action = generate_action(env)
         obs_, reward, done, info = env.step(action)
 
