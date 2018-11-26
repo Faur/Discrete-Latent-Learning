@@ -25,7 +25,7 @@ class ExpParam:
                  raw_dim,  # the raw data
                  net_dim,  # the input to the newtork
                  name_prefix='',
-                 rec_loss_multiplier=1.,
+                 rec_loss_multiplier=0.,
                  g_std=0,
                  learning_rate=0.001,
                  batch_size=64,

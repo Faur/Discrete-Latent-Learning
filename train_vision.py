@@ -27,7 +27,8 @@ tf.set_random_seed(int(time.time())+1)
 # * Tensorboard measure: difference between two random prediction - pure prior check.
 #   - This can be achieved by looking at q_y
 
-def create_or_load_vae(model_path, exp_param):
+
+def create_or_load_vae(model_path, exp_param, critical_load=False):
     graph = tf.Graph()
     with graph.as_default():  # Original formuation
         # graph.as_default()
@@ -56,6 +57,8 @@ def create_or_load_vae(model_path, exp_param):
             print("Model restored from: {}".format(model_path))
         except:
             print("Could not restore saved model")
+            if critical_load:
+                raise Exception
 
         return sess, network, saver
 

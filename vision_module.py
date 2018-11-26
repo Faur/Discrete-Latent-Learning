@@ -50,7 +50,6 @@ class BaseAutoEncoder(object):
         mask_net = mask_net * self.exp_param.g_std / 0.3989  # https://stats.stackexchange.com/questions/143631/height-of-a-normal-distribution-curve
         return raw_input, net_input, mask_in, mask_net
 
-
     def gaussian_kernel(self,
                         size: int,
                         mean: float,
@@ -107,6 +106,7 @@ class BaseAutoEncoder(object):
             print(x)
             x = tf.layers.conv2d(x, filters=128, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
             print(x)
+        print()
         return x
 
     def decoder(self, z):
@@ -288,23 +288,15 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
         # z = K.reshape(softmax(y / self.tau), (-1, N*M))
 
         def gumble_softmax(y):
-            print("gumble_softmax")
             z = softmax(y / self.tau.value)
             z = tf.reshape(z, (-1, N*M))
             return z
 
         def hardsample(log_q_y):
-            print('hardsample')
             log_q_y = tf.reshape(log_q_y, (-1, M))
             z = tf.multinomial(log_q_y, 1)
-            print("multinomial")
-            print(z)
             z = tf.one_hot(z, M)
-            print("onehot")
-            print(z)
             z = tf.reshape(z, (-1, N*M))
-            print("reshape")
-            print(z)
             return z
 
         # TODO: make sure that hard sample works with differnet shapes
@@ -313,9 +305,7 @@ class DiscreteAutoEncoder(BaseAutoEncoder):
             lambda: gumble_softmax(y),
             lambda: hardsample(log_q_y)
         )
-
         return z
-
 
     def latent(self, x):
         print("Latent: Discrete")

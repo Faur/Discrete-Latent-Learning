@@ -119,7 +119,7 @@ if __name__ == '__main__':
         file_name = file_names[0]
         data_path = './data/' + file_name + '.h5'
         print(data_path)
-        data = data_utils.lad_h5_as_list(data_path)
+        data = data_utils.load_h5_as_list(data_path)
         print('data', type(data))
         print('data[0]', type(data[0]))
         print("Load test - Success!")

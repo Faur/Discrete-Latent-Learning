@@ -21,7 +21,7 @@ def data_iterator_mnist(data, batch_size):
             yield epoch, i*batch_size, data[i*batch_size:(i+1)*batch_size]
 
 
-def data_iterator_atari(data, batch_size, train=True):
+def data_iterator_atari(data, batch_size, shuffle=True):
     def shuffle_data(obs, obs_mask, action, reward, done):
         ## https://stackoverflow.com/questions/4601373/better-way-to-shuffle-two-numpy-arrays-in-unison
         # p = np.random.permutation(obs.shape[0])
@@ -47,7 +47,7 @@ def data_iterator_atari(data, batch_size, train=True):
         if batch_size == -1:
             yield None, N, (obs, obs_mask, action, reward, done)
 
-        if train:
+        if shuffle:
             obs, obs_mask, action, reward, done = shuffle_data(obs, obs_mask, action, reward, done)
         for i in range(int(N / batch_size)):
             out_data = (
@@ -60,7 +60,7 @@ def data_iterator_atari(data, batch_size, train=True):
             yield epoch, i * batch_size, out_data
 
 
-def load_data(train_batch_size, dataset='mnist', test_batch_size=64):  #TODO: test_batch_size should be handled properly (=-1)
+def load_data(train_batch_size, dataset='mnist', test_batch_size=64, shuffle=True):  #TODO: test_batch_size should be handled properly (=-1)
     if dataset == 'mnist':
         mnist = tf.keras.datasets.mnist
         (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -73,13 +73,13 @@ def load_data(train_batch_size, dataset='mnist', test_batch_size=64):  #TODO: te
         return train_iter, test_iter
     elif dataset == 'breakout':
         # TODO: This probably causes meomry issues
-        x_train = lad_h5_as_array('Breakout_raw_train_')
-        train_iter = data_iterator_atari(x_train, batch_size=train_batch_size)
+        x_train = load_h5_as_array('Breakout_raw_train_')
+        train_iter = data_iterator_atari(x_train, batch_size=train_batch_size, shuffle=shuffle)
         print('Train set loaded complete.', x_train[0].shape[0], 'data points in total.')
         print()
 
-        x_test = lad_h5_as_array('Breakout_raw_valid_')
-        test_iter = data_iterator_atari(x_test, batch_size=test_batch_size, train=False)
+        x_test = load_h5_as_array('Breakout_raw_valid_')
+        test_iter = data_iterator_atari(x_test, batch_size=test_batch_size, shuffle=False)
         print('Valid set loaded complete', x_test[0].shape[0], 'data points in total.')
         print()
 
@@ -109,7 +109,22 @@ def save_np_array_as_h5(file_name, data_as_array):
     h5f.close()
 
 
-def lad_h5_as_list(data_path):
+def save_lists_as_h5(file_name, data_as_lists):
+    # print("Format: (obs, action, reward, done)")
+    data_path = './data/'+file_name+'.h5'
+
+    obs, mask, action, reward, done = data_as_lists
+
+    h5f = h5py.File(data_path, 'w')
+    h5f.create_dataset('obs',         data=obs)
+    h5f.create_dataset('obs_mask',    data=mask)
+    h5f.create_dataset('action',      data=action.astype(int))
+    h5f.create_dataset('reward',      data=reward.astype(float))
+    h5f.create_dataset('done',        data=done.astype(int))
+    h5f.close()
+
+
+def load_h5_as_list(data_path):
     h5f = h5py.File(data_path, 'r')
     # data = {}
     # data['obs']    = h5f['obs'][:]      # float
@@ -128,14 +143,14 @@ def lad_h5_as_list(data_path):
     return data
 
 
-def lad_h5_as_array(file_name, num_chars=4):
+def load_h5_as_array(file_name, num_chars=4):
     data = []
     i = 0
     while True:
         data_path = './data/' + file_name + '{:04}'.format(i) + '.h5'
 
         if os.path.isfile(data_path):
-            data.append(lad_h5_as_list(data_path))
+            data.append(load_h5_as_list(data_path))
         else:
             break
         print('Loaded:', data_path)
