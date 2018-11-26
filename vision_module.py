@@ -165,7 +165,11 @@ class BaseAutoEncoder(object):
 
         err = (self.reconstructions - self.image)
         err = tf.square(err)
-        err = err + err*self.mask_net
+        err_mask = err*self.mask_net
+        tf.summary.scalar("train/err_mask", tf.reduce_mean(err_mask))
+        tf.summary.histogram('train_C/err_mask', err_mask)
+
+        err = err + err_mask*self.exp_param.rec_loss_multiplier
 
         return tf.reduce_mean(err, axis=[1, 2, 3]), tf.reduce_mean(err, axis=-1, keepdims=True)
 
