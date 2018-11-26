@@ -52,7 +52,7 @@ class ExpParam:
 
         self.learning_rate = learning_rate
         self.rec_loss_multiplier = rec_loss_multiplier
-        self.g_size = int(g_std*3)
+        self.g_size = int(np.ceil(g_std)*3)
         self.g_std = g_std if g_std > 0 else 1
 
         self.valid_inter = valid_inter

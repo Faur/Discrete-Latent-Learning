@@ -110,9 +110,7 @@ def train_vae(exp_param, experiment_name=None):
                 if exp_param.dataset == 'breakout':
                     # TODO: handle data for agent properly!
                     images = data[0]
-                    masks = data[1] * exp_param.rec_loss_multiplier
-                    # masks = data[1]  # TODO: Test that this works! (currently 'exp_param.rec_loss_multiplier' is multiplied twice'
-                    # masks = data_utils.mask_col(images, ball_col, rec_loss_multiplier)
+                    masks = data[1]  # TODO: Test that this works! (currently 'exp_param.rec_loss_multiplier' is multiplied twice'
                 else:
                     images = data
                     masks = None
@@ -135,9 +133,12 @@ def train_vae(exp_param, experiment_name=None):
             epoch, e_step, data = next(train_iter)
             if exp_param.dataset == 'breakout':
                 # TODO: handle data for agent properly!
-                images = data[0]
-                masks = data[1] * exp_param.rec_loss_multiplier
-                # masks = data_utils.mask_col(images, ball_col, rec_loss_multiplier)
+                if np.random.randint(0,2) == 0:
+                    images = data[0]
+                    masks = data[1]  # TODO: Test that this works! (currently 'exp_param.rec_loss_multiplier' is multiplied twice'
+                else:
+                    images = data[0][:,::-1,:,:]
+                    masks = data[1][:,::-1,:,:]
             else:
                 images = data
                 masks = None
