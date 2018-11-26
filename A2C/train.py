@@ -129,7 +129,7 @@ class Trainer(BaseTrainer):
         )
         return loss, policy_loss, value_loss, policy_entropy
 
-    def __observation_update(self, new_observation, old_observation):
+    def __observation_update(new_observation, old_observation):
         # Do frame-stacking here instead of the FrameStack wrapper to reduce IPC overhead
         updated_observation = np.roll(old_observation, shift=-1, axis=3)
         updated_observation[:, :, :, -1] = new_observation[:, :, :, 0]

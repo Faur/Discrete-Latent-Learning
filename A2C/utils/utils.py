@@ -67,7 +67,7 @@ def create_experiment_dirs(exp_dir):
     :param exp_dir:
     :return summary_dir, checkpoint_dir:
     """
-    experiment_dir = "experiments/" + exp_dir + "/"
+    experiment_dir = "A2C/experiments/" + exp_dir + "/"
     summary_dir = experiment_dir + 'summaries/'
     checkpoint_dir = experiment_dir + 'checkpoints/'
     output_dir = experiment_dir + 'output/'
