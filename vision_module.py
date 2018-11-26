@@ -49,8 +49,8 @@ class BaseAutoEncoder(object):
             mask_net = tf.nn.conv2d(mask_net, g_kernel, strides=[1, 1, 1, 1], padding="SAME")
         mask_net = mask_net * self.exp_param.g_std / 0.3989  # https://stats.stackexchange.com/questions/143631/height-of-a-normal-distribution-curve
 
-        N, M = self.latent_dim[0]  # Number variables, values per variable
-        z_input = tf.placeholder(tf.float32, shape=(None, N*M))
+        z_dim = np.prod(self.latent_dim[0])  # Number variables, values per variable
+        z_input = tf.placeholder(tf.float32, shape=(None, z_dim))
 
         return raw_input, net_input, mask_in, mask_net, z_input
 
@@ -74,6 +74,8 @@ class BaseAutoEncoder(object):
         # self.reconstructions = self.decoder(self.z)
         with tf.variable_scope('decoder'):
             self.reconstructions = self.decoder(self.z)
+        with tf.variable_scope('decoder', reuse=True):
+            tf.get_variable_scope().reuse_variables()  # TODO: Why is this necessary? It shouldn't be, but it is...?
             self.reconstructions_from_z = self.decoder(self.z_input)
 
         tf.summary.image('reconstructions', self.reconstructions, self.tb_num_images)
@@ -81,10 +83,12 @@ class BaseAutoEncoder(object):
         self.loss, self.loss_img = self.compute_loss()
 
         mask_norm = self.mask_net/(tf.reduce_max(self.mask_net)+1e-9)
-        mask_norm = tf.tile(mask_norm, [1, 1, 1, 3])
 
         loss_img_3ch = self.loss_img/(tf.reduce_max(self.loss_img)+1e-9)
-        loss_img_3ch = tf.tile(loss_img_3ch, [1, 1, 1, 3])
+
+        if self.exp_param.dataset == 'breakout':
+            mask_norm = tf.tile(mask_norm, [1, 1, 1, 3])
+            loss_img_3ch = tf.tile(loss_img_3ch, [1, 1, 1, 3])
 
         sum_img_top = tf.concat([self.image, self.reconstructions], 2)
         sum_img_bot = tf.concat([mask_norm, loss_img_3ch], 2)
@@ -103,10 +107,9 @@ class BaseAutoEncoder(object):
             print(x)
             x = tf.layers.conv2d(x, filters=128, kernel_size=3, strides=2, padding='valid', activation=tf.nn.relu)
             print(x)
-            print()
-        elif self.dataset == 'breakout':
-            x = tf.layers.conv2d(x, filters=8, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
+            x = tf.layers.conv2d(x, filters=128, kernel_size=2, strides=1, padding='valid', activation=tf.nn.relu)
             print(x)
+        elif self.dataset == 'breakout':
             x = tf.layers.conv2d(x, filters=16, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
             print(x)
             x = tf.layers.conv2d(x, filters=32, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
@@ -115,16 +118,18 @@ class BaseAutoEncoder(object):
             print(x)
             x = tf.layers.conv2d(x, filters=128, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
             print(x)
+            x = tf.layers.conv2d(x, filters=256, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
+            print(x)
         print()
         return x
 
-    def decoder(self, z):
+    def decoder(self, z, reuse=False):
         print('Decoder')
 
-        first_conv_filters = 128
+        first_conv_filters = 256
         decoder_input_size = self.encoder_out.shape[1]*self.encoder_out.shape[2]*first_conv_filters
 
-        x = tf.layers.dense(z, decoder_input_size, activation=None)
+        x = tf.layers.dense(z, decoder_input_size, activation=tf.nn.relu)
         print(x)
         # x = tf.reshape(x, [-1, 1, 1, decoder_input_size])
         x = tf.reshape(x, [
@@ -136,24 +141,28 @@ class BaseAutoEncoder(object):
         # x = tf.layers.conv2d(x, filters=128, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
         print(x)
 
+        x = tf.layers.conv2d_transpose(x, filters=128, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
+        x = tf.layers.conv2d(x, filters=128, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
+        print(x)
         x = tf.layers.conv2d_transpose(x, filters=64, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
-        # x = tf.layers.conv2d(x, filters=64, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
+        x = tf.layers.conv2d(x, filters=64, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
         print(x)
         x = tf.layers.conv2d_transpose(x, filters=32, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
-        # x = tf.layers.conv2d(x, filters=32, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
+        x = tf.layers.conv2d(x, filters=32, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
         print(x)
         x = tf.layers.conv2d_transpose(x, filters=16, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
-        # x = tf.layers.conv2d(x, filters=16, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
+        x = tf.layers.conv2d(x, filters=16, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
         print(x)
-        x = tf.layers.conv2d_transpose(x, filters=8, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
-        # x = tf.layers.conv2d(x, filters=8, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
-        print(x)
-        x = tf.layers.conv2d_transpose(x, filters=8, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
-        # x = tf.layers.conv2d(x, filters=8, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
-        print(x)
+
         if self.dataset == 'mnist':
+            x = tf.layers.conv2d_transpose(x, filters=8, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
+            x = tf.layers.conv2d(x, filters=8, kernel_size=5, strides=1, padding='valid', activation=tf.nn.relu)
+            print(x)
             x = tf.layers.conv2d(x, filters=self.img_channels, kernel_size=1, strides=1, padding='valid', activation=tf.nn.relu)
         elif self.dataset == 'breakout':
+            x = tf.layers.conv2d_transpose(x, filters=8, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
+            x = tf.layers.conv2d(x, filters=8, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
+            print(x)
             x = tf.layers.conv2d(x, filters=self.img_channels, kernel_size=1, strides=1, padding='same', activation=tf.nn.relu)
         print(x)
         print()

@@ -72,8 +72,8 @@ def train_vae(exp_param, experiment_name=None):
 
     print('experiment_name: ', experiment_name)
     print('model_path: ', model_path)
-    print('model_name: ', model_name)
-    exp_param.print()
+    # print('model_name: ', model_name)
+    # exp_param.print()
     print()
 
     ################## SETTINGS #####################
@@ -84,8 +84,8 @@ def train_vae(exp_param, experiment_name=None):
 
     ### DATA
     train_iter, test_iter = data_utils.load_data(batch_size, data_set)
-    ball_col = data_utils.ball_col
-    rec_loss_multiplier = exp_param.rec_loss_multiplier
+    # ball_col = data_utils.ball_col
+    # rec_loss_multiplier = exp_param.rec_loss_multiplier
 
     ### NETWORK
     sess, network, saver = create_or_load_vae(model_path, exp_param=exp_param)
@@ -116,7 +116,7 @@ def train_vae(exp_param, experiment_name=None):
                     masks = data[1]  # TODO: Test that this works! (currently 'exp_param.rec_loss_multiplier' is multiplied twice'
                 else:
                     images = data
-                    masks = None
+                    masks = np.zeros_like(images)
 
                 # TODO: Test should use hard sample
                 [summary, test_loss] = sess.run([network.merged, network.loss], feed_dict={
@@ -144,7 +144,7 @@ def train_vae(exp_param, experiment_name=None):
                     masks = data[1][:,::-1,:,:]
             else:
                 images = data
-                masks = None
+                masks = np.zeros_like(images)
 
             ## COMPUTE TRAIN SET SUMMARY
             if step % valid_inter == 0 and step > 0:
