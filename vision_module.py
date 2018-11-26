@@ -21,7 +21,7 @@ class BaseAutoEncoder(object):
         self.is_training = tf.placeholder(tf.bool, name='is_training')
         self.img_channels = exp_param.net_dim[-1]
 
-        self.raw_input, self.image, self.mask_in, self.mask_net = self.create_net_input()
+        self.raw_input, self.image, self.mask_in, self.mask_net, self.z_input = self.create_net_input()
         tf.summary.image('image', self.image, self.tb_num_images)
         tf.summary.image('mask_net', self.mask_net, self.tb_num_images)
 
@@ -48,7 +48,11 @@ class BaseAutoEncoder(object):
             g_kernel = self.gaussian_kernel(self.exp_param.g_size, 0, self.exp_param.g_std)
             mask_net = tf.nn.conv2d(mask_net, g_kernel, strides=[1, 1, 1, 1], padding="SAME")
         mask_net = mask_net * self.exp_param.g_std / 0.3989  # https://stats.stackexchange.com/questions/143631/height-of-a-normal-distribution-curve
-        return raw_input, net_input, mask_in, mask_net
+
+        N, M = self.latent_dim[0]  # Number variables, values per variable
+        z_input = tf.placeholder(tf.float32, shape=(None, N*M))
+
+        return raw_input, net_input, mask_in, mask_net, z_input
 
     def gaussian_kernel(self,
                         size: int,
@@ -66,7 +70,12 @@ class BaseAutoEncoder(object):
     def setup_network(self):
         self.encoder_out = self.encoder(self.image)
         self.z, self.latent_var = self.latent(self.encoder_out)
-        self.reconstructions = self.decoder(self.z)
+
+        # self.reconstructions = self.decoder(self.z)
+        with tf.variable_scope('decoder'):
+            self.reconstructions = self.decoder(self.z)
+            self.reconstructions_from_z = self.decoder(self.z_input)
+
         tf.summary.image('reconstructions', self.reconstructions, self.tb_num_images)
 
         self.loss, self.loss_img = self.compute_loss()
