@@ -1,11 +1,13 @@
 import tensorflow as tf
-from utils.utils import create_experiment_dirs
-from utils.utils import parse_args
-from A2C import A2C
+
+from A2C.ActorCritic import A2C
+from A2C.utils.utils import create_experiment_dirs
+from A2C.utils.utils import parse_args
 
 
 def main():
     # Parse the JSON arguments
+    # config_dir = ".\config\breakout.json"
     config_args = parse_args()
 
     tf.reset_default_graph()
@@ -13,6 +15,7 @@ def main():
     config = tf.ConfigProto(allow_soft_placement=True,
                             intra_op_parallelism_threads=config_args.num_envs,
                             inter_op_parallelism_threads=config_args.num_envs)
+
     config.gpu_options.allow_growth = True
     sess = tf.Session(config=config)
 

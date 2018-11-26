@@ -1,6 +1,6 @@
-from envs.base_env import BaseEnv
-from envs.atari_wrappers import wrap_deepmind
-from envs.monitor import Monitor
+from A2C.envs.base_env import BaseEnv
+from A2C.envs.atari_wrappers import wrap_deepmind
+from A2C.envs.monitor import Monitor
 import gym
 from gym import wrappers
 
