@@ -7,6 +7,9 @@ from keras.activations import softmax
 
 from exp_parameters import DecayParam
 
+from A2C.layers import orthogonal_initializer, noise_and_argmax
+from A2C.layers import conv2d, flatten, dense
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
@@ -38,7 +41,8 @@ class BaseAutoEncoder(object):
         if self.dataset == 'breakout':
             net_input = tf.div(net_input, 255., 'normalize')
 
-        mask_in = tf.placeholder(tf.uint8, (None,) + self.exp_param.raw_dim[:2] + (1,), 'Rec_loss_mask')
+        # mask_in = tf.placeholder(tf.uint8, (None,) + self.exp_param.raw_dim[:2] + (1,), 'Rec_loss_mask')
+        mask_in = tf.placeholder(tf.uint8, (None,) + self.exp_param.raw_dim, 'Rec_loss_mask')
         mask_net = tf.image.resize_images(
             mask_in,
             size=self.exp_param.net_dim[:2],
@@ -84,15 +88,23 @@ class BaseAutoEncoder(object):
 
         self.loss, self.loss_img = self.compute_loss()
 
-        mask_norm = self.mask_net/(tf.reduce_max(self.mask_net)+1e-9)
-
         loss_img_3ch = self.loss_img/(tf.reduce_max(self.loss_img)+1e-9)
 
-        if self.exp_param.dataset == 'breakout':
-            mask_norm = tf.tile(mask_norm, [1, 1, 1, 3])
-            loss_img_3ch = tf.tile(loss_img_3ch, [1, 1, 1, 3])
+        mask_norm = self.mask_net
 
-        sum_img_top = tf.concat([self.image, self.reconstructions], 2)
+        if self.exp_param.dataset == 'breakout':
+            # mask_norm = tf.tile(mask_norm, [1, 1, 1, 3])
+            # loss_img_3ch = tf.tile(loss_img_3ch, [1, 1, 1, 3])
+            img_reshape = tf.reduce_mean(self.image, -1, keepdims=True)
+            rec_reshape = tf.reduce_mean(self.reconstructions, -1, keepdims=True)
+            mask_norm = tf.reduce_mean(mask_norm, -1, keepdims=True)
+        else:
+            img_reshape = self.image
+            rec_reshape = self.reconstructions
+
+        mask_norm = mask_norm/(tf.reduce_max(mask_norm)+1e-9)
+
+        sum_img_top = tf.concat([img_reshape, rec_reshape], 2)
         sum_img_bot = tf.concat([mask_norm, loss_img_3ch], 2)
         self.sum_img = tf.concat([sum_img_top, sum_img_bot], 1)
         tf.summary.image('awesome_summary', self.sum_img, self.tb_num_images)
@@ -103,32 +115,69 @@ class BaseAutoEncoder(object):
         print('Encoder')
         print(x)
         if self.dataset == 'mnist':
-            x = tf.layers.conv2d(x, filters=32, kernel_size=3, strides=2, padding='valid', activation=tf.nn.relu)
+            # x = tf.layers.conv2d(x, filters=32, kernel_size=3, strides=2, padding='valid', activation=tf.nn.relu)
+            # print(x)
+            # x = tf.layers.conv2d(x, filters=64, kernel_size=3, strides=2, padding='valid', activation=tf.nn.relu)
+            # print(x)
+            # x = tf.layers.conv2d(x, filters=128, kernel_size=3, strides=2, padding='valid', activation=tf.nn.relu)
+            # print(x)
+            # x = tf.layers.conv2d(x, filters=128, kernel_size=2, strides=1, padding='valid', activation=tf.nn.relu)
+            # print(x)
+            # x = tf.layers.conv2d(x, filters=32, kernel_size=3, strides=2, padding='valid', activation=tf.nn.relu)
+            # print(x)
+            x = conv2d('conv1', x, num_filters=32, kernel_size=(8, 8),
+                           padding='VALID', stride=(4, 4),
+                           initializer=orthogonal_initializer(np.sqrt(2)), activation=tf.nn.relu,
+                           is_training=self.is_training)
             print(x)
-            x = tf.layers.conv2d(x, filters=64, kernel_size=3, strides=2, padding='valid', activation=tf.nn.relu)
+
+            x = conv2d('conv2', x, num_filters=64, kernel_size=(4, 4), padding='VALID', stride=(2, 2),
+                           initializer=orthogonal_initializer(np.sqrt(2)), activation=tf.nn.relu,
+                           is_training=self.is_training)
             print(x)
-            x = tf.layers.conv2d(x, filters=128, kernel_size=3, strides=2, padding='valid', activation=tf.nn.relu)
+            x = conv2d('conv3', x, num_filters=64, kernel_size=(2,2), padding='VALID', stride=(1, 1),
+                           initializer=orthogonal_initializer(np.sqrt(2)), activation=tf.nn.relu,
+                           is_training=self.is_training)
             print(x)
-            x = tf.layers.conv2d(x, filters=128, kernel_size=2, strides=1, padding='valid', activation=tf.nn.relu)
-            print(x)
+            # x = tf.layers.conv2d(x, filters=128, kernel_size=2, strides=1, padding='valid', activation=tf.nn.relu)
+            # print(x)
+
+        # elif self.dataset == 'breakout':
+        #     ## OLD VERSION THAT IS VERY BIG!
+        #     x = tf.layers.conv2d(x, filters=16, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
+        #     print(x)
+        #     x = tf.layers.conv2d(x, filters=32, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
+        #     print(x)
+        #     x = tf.layers.conv2d(x, filters=64, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
+        #     print(x)
+        #     x = tf.layers.conv2d(x, filters=128, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
+        #     print(x)
+        #     x = tf.layers.conv2d(x, filters=256, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
+        #     print(x)
         elif self.dataset == 'breakout':
-            x = tf.layers.conv2d(x, filters=16, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
-            print(x)
-            x = tf.layers.conv2d(x, filters=32, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
-            print(x)
-            x = tf.layers.conv2d(x, filters=64, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
-            print(x)
-            x = tf.layers.conv2d(x, filters=128, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
-            print(x)
-            x = tf.layers.conv2d(x, filters=256, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
-            print(x)
+            conv1 = conv2d('conv1', x, num_filters=32, kernel_size=(8, 8),
+                           padding='VALID', stride=(4, 4),
+                           initializer=orthogonal_initializer(np.sqrt(2)), activation=tf.nn.relu,
+                           is_training=self.is_training)
+            print(conv1)
+
+            conv2 = conv2d('conv2', conv1, num_filters=64, kernel_size=(4, 4), padding='VALID', stride=(2, 2),
+                           initializer=orthogonal_initializer(np.sqrt(2)), activation=tf.nn.relu,
+                           is_training=self.is_training)
+            print(conv2)
+
+            conv3 = conv2d('conv3', conv2, num_filters=64, kernel_size=(3, 3), padding='VALID', stride=(1, 1),
+                           initializer=orthogonal_initializer(np.sqrt(2)), activation=tf.nn.relu,
+                           is_training=self.is_training)
+            print(conv3)
+            x = conv3
         print()
         return x
 
     def decoder(self, z, reuse=False):
         print('Decoder')
-
-        first_conv_filters = 256
+        # first_conv_filters = 256
+        first_conv_filters = 64
         decoder_input_size = self.encoder_out.shape[1]*self.encoder_out.shape[2]*first_conv_filters
 
         x = tf.layers.dense(z, decoder_input_size, activation=tf.nn.relu)
@@ -143,38 +192,91 @@ class BaseAutoEncoder(object):
         # x = tf.layers.conv2d(x, filters=128, kernel_size=3, strides=2, padding='same', activation=tf.nn.relu)
         print(x)
 
-        x = tf.image.resize_images(x, (x.shape[1]*2, x.shape[2]*2))
-        x = tf.layers.conv2d(x, filters=128, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
-        # x = tf.layers.conv2d_transpose(x, filters=128, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
-        print(x)
-        # x = tf.layers.conv2d_transpose(x, filters=64, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
-        x = tf.image.resize_images(x, (x.shape[1]*2, x.shape[2]*2))
-        x = tf.layers.conv2d(x, filters=64, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
-        print(x)
-        # x = tf.layers.conv2d_transpose(x, filters=32, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
-        x = tf.image.resize_images(x, (x.shape[1]*2, x.shape[2]*2))
-        x = tf.layers.conv2d(x, filters=32, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
-        print(x)
-        # x = tf.layers.conv2d_transpose(x, filters=16, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
-        x = tf.image.resize_images(x, (x.shape[1]*2, x.shape[2]*2))
-        x = tf.layers.conv2d(x, filters=16, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
-        print(x)
 
         if self.dataset == 'mnist':
-            # x = tf.layers.conv2d_transpose(x, filters=8, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
-            x = tf.image.resize_images(x, (x.shape[1]*2, x.shape[2]*2))
-            x = tf.layers.conv2d(x, filters=8, kernel_size=5, strides=1, padding='valid', activation=tf.nn.relu)
+            x = tf.image.resize_images(x, (x.shape[1] * 6, x.shape[2] * 6))
+            x = conv2d('conv_up1', x, num_filters=64, kernel_size=(3, 3), padding='VALID', stride=(1, 1),
+                           initializer=orthogonal_initializer(np.sqrt(2)), activation=tf.nn.relu,
+                           is_training=self.is_training)
             print(x)
-            x = tf.layers.conv2d(x, filters=self.img_channels, kernel_size=1, strides=1, padding='valid', activation=tf.nn.relu)
+
+            x = tf.image.resize_images(x, (x.shape[1] * 3, x.shape[2] * 3))
+            x = conv2d('conv_up2', x, num_filters=64, kernel_size=(3, 3), padding='VALID', stride=(1, 1),
+                           initializer=orthogonal_initializer(np.sqrt(2)), activation=tf.nn.relu,
+                           is_training=self.is_training)
+            print(x)
+
+            x = tf.image.resize_images(x, (x.shape[1] * 3, x.shape[2] * 3))
+            x = conv2d('conv_up3', x, num_filters=32, kernel_size=(3, 3), padding='VALID', stride=(1, 1),
+                           initializer=orthogonal_initializer(np.sqrt(2)), activation=tf.nn.relu,
+                           is_training=self.is_training)
+            print(x)
+
+            x = conv2d('conv_up4', x, num_filters=self.img_channels, kernel_size=(1, 1), padding='VALID', stride=(1, 1),
+                           initializer=orthogonal_initializer(np.sqrt(2)), activation=None,
+                           is_training=self.is_training)
+            print(x)
         elif self.dataset == 'breakout':
-            # x = tf.layers.conv2d_transpose(x, filters=8, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
-            x = tf.image.resize_images(x, (x.shape[1]*2, x.shape[2]*2))
-            x = tf.layers.conv2d(x, filters=8, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
+            x = tf.image.resize_images(x, (x.shape[1] * 4, x.shape[2] * 4))
+            # x = tf.layers.conv2d(x, filters=64, kernel_size=7, strides=1, padding='valid', activation=tf.nn.relu)
+            x = conv2d('conv_up1', x, num_filters=64, kernel_size=(7, 7), padding='VALID', stride=(1, 1),
+                           initializer=orthogonal_initializer(np.sqrt(2)), activation=tf.nn.relu,
+                           is_training=self.is_training)
             print(x)
-            x = tf.layers.conv2d(x, filters=self.img_channels, kernel_size=1, strides=1, padding='same', activation=tf.nn.relu)
-        print(x)
+            x = tf.image.resize_images(x, (x.shape[1] * 4, x.shape[2] * 4))
+            # x = tf.layers.conv2d(x, filters=64, kernel_size=7, strides=1, padding='same', activation=tf.nn.relu)
+            x = conv2d('conv_up2', x, num_filters=64, kernel_size=(7, 7), padding='SAME', stride=(1, 1),
+                           initializer=orthogonal_initializer(np.sqrt(2)), activation=tf.nn.relu,
+                           is_training=self.is_training)
+            print(x)
+            # x = tf.layers.conv2d(x, filters=32, kernel_size=5, strides=1, padding='valid', activation=tf.nn.relu)
+            x = conv2d('conv_up3', x, num_filters=32, kernel_size=(5, 5), padding='VALID', stride=(1, 1),
+                           initializer=orthogonal_initializer(np.sqrt(2)), activation=tf.nn.relu,
+                           is_training=self.is_training)
+            print(x)
+            # x = tf.layers.conv2d(x, filters=self.img_channels, kernel_size=1, strides=1, padding='same', activation=None)
+            x = conv2d('conv_up4', x, num_filters=self.img_channels, kernel_size=(1, 1), padding='VALID', stride=(1, 1),
+                           initializer=orthogonal_initializer(np.sqrt(2)), activation=None,
+                           is_training=self.is_training)
+            print(x)
         print()
         return x
+
+        if 0:
+            ## OLD LARGE CRAP
+
+            x = tf.image.resize_images(x, (x.shape[1]*2, x.shape[2]*2))
+            x = tf.layers.conv2d(x, filters=128, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
+            # x = tf.layers.conv2d_transpose(x, filters=128, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
+            print(x)
+            # x = tf.layers.conv2d_transpose(x, filters=64, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
+            x = tf.image.resize_images(x, (x.shape[1]*2, x.shape[2]*2))
+            x = tf.layers.conv2d(x, filters=64, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
+            print(x)
+            # x = tf.layers.conv2d_transpose(x, filters=32, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
+            x = tf.image.resize_images(x, (x.shape[1]*2, x.shape[2]*2))
+            x = tf.layers.conv2d(x, filters=32, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
+            print(x)
+            # x = tf.layers.conv2d_transpose(x, filters=16, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
+            x = tf.image.resize_images(x, (x.shape[1]*2, x.shape[2]*2))
+            x = tf.layers.conv2d(x, filters=16, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
+            print(x)
+
+            if self.dataset == 'mnist':
+                # x = tf.layers.conv2d_transpose(x, filters=8, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
+                x = tf.image.resize_images(x, (x.shape[1]*2, x.shape[2]*2))
+                x = tf.layers.conv2d(x, filters=8, kernel_size=5, strides=1, padding='valid', activation=tf.nn.relu)
+                print(x)
+                x = tf.layers.conv2d(x, filters=self.img_channels, kernel_size=1, strides=1, padding='valid', activation=tf.nn.relu)
+            elif self.dataset == 'breakout':
+                # x = tf.layers.conv2d_transpose(x, filters=8, kernel_size=2, strides=2, padding='valid', activation=tf.nn.relu)
+                x = tf.image.resize_images(x, (x.shape[1]*2, x.shape[2]*2))
+                x = tf.layers.conv2d(x, filters=8, kernel_size=3, strides=1, padding='same', activation=tf.nn.relu)
+                print(x)
+                x = tf.layers.conv2d(x, filters=self.img_channels, kernel_size=1, strides=1, padding='same', activation=tf.nn.relu)
+            print(x)
+            print()
+            return x
 
     def sample_z(self, *args):
         raise NotImplementedError
