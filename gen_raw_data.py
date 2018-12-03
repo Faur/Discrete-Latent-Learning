@@ -1,3 +1,5 @@
+# python gen_raw_data.py --config A2C/config/breakout.json
+
 import pickle
 
 import numpy as np
@@ -221,7 +223,7 @@ def generate_raw_data(total_frames, postfix='', frame_skip=1):
     #     file_names = p.map(gen_data, gen_args)
 
     for gen_arg in gen_args:
-        file_names = gen_data(gen_arg, True)
+        file_names = gen_data(gen_arg, render=False)
 
     return [file_names]
 
