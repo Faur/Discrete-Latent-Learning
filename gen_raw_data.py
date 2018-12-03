@@ -36,6 +36,17 @@ def generate_action(env):
 
     return a
 
+def plot_4(observation_s):
+    plt.figure()
+    plt.imshow(observation_s[0,:,:,0])
+    plt.figure()
+    plt.imshow(observation_s[0,:,:,1])
+    plt.figure()
+    plt.imshow(observation_s[0,:,:,2])
+    plt.figure()
+    plt.imshow(observation_s[0,:,:,3])
+    plt.show()
+
 
 def gen_data(gen_args, render=False):
     """ Format: (obs, action, reward, done)
@@ -104,6 +115,7 @@ def gen_data(gen_args, render=False):
          a2c.trainer.model.num_classes * a2c.trainer.model.num_stack),
         dtype=np.uint8)
     observation_s = __observation_update(env.reset(), observation_s)
+    mask_s = np.zeros_like(observation_s)
 
     i = 0
     while len(observation_list) < max_steps:
@@ -114,27 +126,30 @@ def gen_data(gen_args, render=False):
             if done:
                 observation_s[n] *= 0
 
-        observation_s_new = __observation_update(observation, observation_s)
-
-        # action = generate_action(env)
-        # obs_, reward, done, info = env.step(action)
-
         # obs_mask = obs.astype(int) - obs
-        obs_mask = observation_s_new[:,:,:,-1].astype(int) - observation_s[:,:,:,-1]
+        obs_mask = observation.astype(int) - observation_s[:,:,:,-1,None]
         # obs_mask = observation_s.astype(int) - observation_s_new
         # obs_mask = np.abs(obs_mask)
-        obs_mask = np.expand_dims(obs_mask,-1)
+        # obs_mask = np.expand_dims(obs_mask,-1)
         obs_mask = obs_mask * (obs_mask > 0)
-        obs_mask = np.mean(obs_mask, -1, keepdims=True).astype(np.uint8)
+        # obs_mask = np.mean(obs_mask, -1, keepdims=True).astype(np.uint8)
         # obs_mask = obs_mask / 255.
         # obs_mask = scipy.ndimage.filters.gaussian_filter(obs_mask, 5)
         # plt.imshow(obs_mask[:, :, 0]); plt.figure(); plt.imshow(obs); plt.show()
+        # plt.imshow(obs_mask[0,:, :, 0]); plt.figure(); plt.imshow(observation[0,:,:,0]); plt.show()
+
+
+        observation_s = __observation_update(observation, observation_s)
+        mask_s = __observation_update(obs_mask, mask_s)
+        # action = generate_action(env)
+        # obs_, reward, done, info = env.step(action)
+
 
         if i % frame_skip == 0:
             # obs_data.append((obs, obs_mask, action, reward, done))
             # obs_data.append((observation, obs_mask, actions, values, dones))
-            observation_list.append(observation)
-            obs_mask_list.append(obs_mask)
+            observation_list.append(observation_s)
+            obs_mask_list.append(mask_s)
             actions_list.append(actions)
             values_list.append(values)
             dones_list.append(dones)
@@ -145,16 +160,16 @@ def gen_data(gen_args, render=False):
             # obs, reward_sum, done = gym_utils.reset_env(env)
             # obs = data_utils.normalize_observation(obs)
             pass
-        else:
+        # else:
             # obs = data_utils.normalize_observation(observation_s)
-            observation_s = observation_s_new
+            # observation_s = observation_s_new
         i += 1
 
     # data_as_array = np.concatenate(obs_data, 0)
     # data_as_array = np.vstack(obs_data)
     data_as_lists = [
         np.vstack(observation_list),
-        np.asarray(obs_mask_list),
+        np.vstack(obs_mask_list),
         np.asarray(actions_list),
         np.asarray(values_list),
         np.asarray(dones_list)]
@@ -212,6 +227,7 @@ def generate_raw_data(total_frames, postfix='', frame_skip=1):
 
 
 if __name__ == '__main__':
+    print(__name__, 'begin')
     frame_skip = 4
 
     # TODO: This causes memory issues!
