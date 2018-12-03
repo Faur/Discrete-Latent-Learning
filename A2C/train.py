@@ -9,6 +9,13 @@ from A2C.utils.lr_decay import LearningRateDecay
 from A2C.utils.utils import create_list_dirs
 
 
+def dummy_encoder_function(obs):
+    # Input: obs.shape = [?, 84, 84, 4]
+    # Output shape: [?, 4096]
+    out = np.zeros([obs.shape[0], 4096])
+    return out
+
+
 class Trainer(BaseTrainer):
     def __init__(self, sess, model, r_discount_factor=0.99,
                  lr_decay_method='linear', args=None):
@@ -43,6 +50,8 @@ class Trainer(BaseTrainer):
             (env.num_envs, self.model.img_height, self.model.img_width, self.model.num_classes * self.model.num_stack),
             dtype=np.uint8)
         self.observation_s = self.__observation_update(self.env.reset(), self.observation_s)
+        # if self.VAE is not None:
+            # self.observation_s = self.sess.run(
 
         self.states = self.model.step_policy.initial_state
         self.dones = [False for _ in range(self.env.num_envs)]
@@ -99,10 +108,14 @@ class Trainer(BaseTrainer):
              self.model.num_classes * self.model.num_stack),
             dtype=np.uint8)
         observation_s = self.__observation_update(env.reset(), observation_s)
+        # if self.VAE is not None:
+            # self.observation_s = self.sess.run(
 
         for _ in tqdm(range(total_timesteps)):
             actions, values, states = self.model.step_policy.step(observation_s, states, dones)
             observation, rewards, dones, _ = env.step(actions)
+            # if self.VAE is not None:
+                # observation = self.sess.run(
             for n, done in enumerate(dones):
                 if done:
                     observation_s[n] *= 0

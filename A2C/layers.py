@@ -441,9 +441,9 @@ def noise_and_argmax(logits):
 
 def openai_entropy(logits):
     # Entropy proposed by OpenAI in their A2C baseline
-    a0 = logits - tf.reduce_max(logits, 1, keep_dims=True)
+    a0 = logits - tf.reduce_max(logits, 1, keepdims=True)
     ea0 = tf.exp(a0)
-    z0 = tf.reduce_sum(ea0, 1, keep_dims=True)
+    z0 = tf.reduce_sum(ea0, 1, keepdims=True)
     p0 = ea0 / z0
     return tf.reduce_sum(p0 * (tf.log(z0) - a0), 1)
 
