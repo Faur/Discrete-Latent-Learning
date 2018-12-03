@@ -34,6 +34,11 @@ class Trainer(BaseTrainer):
         self.env_summary_logger = EnvSummaryLogger(sess,
                                                    create_list_dirs(self.args.summary_dir, 'env', self.args.num_envs))
 
+    def trainVAE(self, latent, env):
+        ZVector = latent
+
+
+
     def train(self, env):
         self._init_model()
         self._load_model()
@@ -63,6 +68,7 @@ class Trainer(BaseTrainer):
             obs, states, rewards, masks, actions, values = self.__rollout()
             loss, policy_loss, value_loss, policy_entropy = self.__rollout_update(obs, states, rewards, masks, actions,
                                                                                   values)
+
 
             # Calculate and Summarize
             loss_list[arr_idx] = loss

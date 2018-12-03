@@ -107,6 +107,7 @@ def conv2d(name, x, w=None, num_filters=16, kernel_size=(3, 3), padding='SAME', 
            initializer=tf.contrib.layers.xavier_initializer(), l2_strength=0.0, bias=0.0,
            activation=None, batchnorm_enabled=False, max_pool_enabled=False, dropout_keep_prob=-1,
            is_training=True):
+
     """
     This block is responsible for a convolution 2D layer followed by optional (non-linearity, dropout, max-pooling).
     Note that: "is_training" should be passed by a correct value based on being in either training or testing.
