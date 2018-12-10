@@ -333,7 +333,7 @@ def dense(name, x, w=None, output_dim=128, initializer=tf.contrib.layers.xavier_
 
 def flatten(x):
     """
-    Flatten a (N,H,W,C) input into (N,D) output. Used for fully connected layers after conolution layers
+    Flatten a (N,H,W,C) input into (N,D) output. Used for fully connected layers after convolution layers
     :param x: (tf.tensor) representing input
     :return: flattened output
     """
@@ -419,6 +419,7 @@ def get_deconv_filter(f_shape, l2_strength):
     """
     width = f_shape[0]
     height = f_shape[0]
+    import math
     f = math.ceil(width / 2.0)
     c = (2 * f - 1 - f % 2) / (2.0 * f)
     bilinear = np.zeros([f_shape[0], f_shape[1]])
