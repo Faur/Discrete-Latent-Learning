@@ -72,7 +72,7 @@ def main():
         config_args.experiment_dir, config_args.summary_dir, config_args.checkpoint_dir, config_args.output_dir, config_args.test_dir = \
             create_experiment_dirs(config_args.experiment_dir)
 
-        a2c = A2C(sess_a2c, config_args)
+        a2c = A2C(sess_a2c, config_args, True)
 
         # testing
         with open(a2c.args.experiment_dir + a2c.args.env_name + '.pkl', 'rb') as f:
@@ -84,7 +84,7 @@ def main():
             env_name=a2c.args.env_name,
             seed=a2c.args.env_seed)
 
-        a2c.model.build(observation_space_shape, action_space_n)
+        a2c.model.buildForVAE(observation_space_shape, action_space_n, a2c.latent_size)
 
         a2c.trainer._init_model()
         a2c.trainer._load_model()
