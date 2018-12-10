@@ -13,6 +13,32 @@ from A2C.layers import conv2d, flatten, dense
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
+def img_summary(name, img, max_outputs, type='simple'):
+    def concat4(img1, img2, img3, img4):
+        sum_img_top = tf.concat([img1, img2], 2)
+        sum_img_bot = tf.concat([img3, img4], 2)
+        sum_img = tf.concat([sum_img_top, sum_img_bot], 1)
+        return sum_img
+
+    if type == 'simple':
+        return img
+    elif type == 'ch4':
+        img1 = img[:, :, :, 0, None]
+        img2 = img[:, :, :, 1, None]
+        img3 = img[:, :, :, 2, None]
+        img4 = img[:, :, :, 3, None]
+
+    elif type == 'list':
+        img1, img2, img3, img4 = img
+    else:
+        raise Exception
+
+    sum_img = concat4(img1, img2, img3, img4)
+    tf.summary.image(name, sum_img, max_outputs)
+
+    return sum_img
+
+
 class BaseAutoEncoder(object):
     # Create model
     def __init__(self, exp_param):
@@ -25,8 +51,10 @@ class BaseAutoEncoder(object):
         self.img_channels = exp_param.net_dim[-1]
 
         self.raw_input, self.image, self.mask_in, self.mask_net, self.z_input = self.create_net_input()
-        tf.summary.image('image', self.image, self.tb_num_images)
-        tf.summary.image('mask_net', self.mask_net, self.tb_num_images)
+        # tf.summary.image('image', self.image, self.tb_num_images)
+        img_summary('image', self.image, self.tb_num_images, type='ch4')
+        # tf.summary.image('mask_net', self.mask_net, self.tb_num_images)
+        img_summary('mask_net', self.mask_net, self.tb_num_images, type='ch4')
 
     def create_net_input(self):
         # tf.placeholder(tf.float32, (None,) + exp_param.data_dim, name='image')
@@ -88,7 +116,9 @@ class BaseAutoEncoder(object):
 
         # for x in tf.global_variables(): print(x.name)  # Debugging
 
-        tf.summary.image('reconstructions', self.reconstructions, self.tb_num_images)
+        # tf.summary.image('reconstructions', self.reconstructions, self.tb_num_images)
+        img_summary('reconstructions', self.reconstructions, self.tb_num_images, type='ch4')
+
 
         self.loss, self.loss_img = self.compute_loss()
 
@@ -108,10 +138,7 @@ class BaseAutoEncoder(object):
 
         mask_norm = mask_norm/(tf.reduce_max(mask_norm)+1e-9)
 
-        sum_img_top = tf.concat([img_reshape, rec_reshape], 2)
-        sum_img_bot = tf.concat([mask_norm, loss_img_3ch], 2)
-        self.sum_img = tf.concat([sum_img_top, sum_img_bot], 1)
-        tf.summary.image('awesome_summary', self.sum_img, self.tb_num_images)
+        self.sum_img = img_summary('awesome_summary', [img_reshape, rec_reshape, mask_norm, loss_img_3ch], self.tb_num_images, 'list')
 
         self.merged = tf.summary.merge_all()
 
