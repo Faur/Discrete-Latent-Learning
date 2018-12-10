@@ -33,7 +33,8 @@ def create_or_load_vae(model_path, exp_param, critical_load=False):
     with graph.as_default():  # Original formuation
         # graph.as_default()
 
-        config = tf.ConfigProto()
+        config = tf.ConfigProto(
+            allow_soft_placement=True)
         config.gpu_options.allow_growth = True
         # sess = tf.Session(config=config, graph=graph) # previous
         sess = tf.InteractiveSession(config=config, graph=graph)
@@ -51,7 +52,7 @@ def create_or_load_vae(model_path, exp_param, critical_load=False):
         init = tf.global_variables_initializer()
         sess.run(init)
 
-        saver = tf.train.Saver(max_to_keep=1)
+        saver = tf.train.Saver(max_to_keep=1, name='ae_saver')
         try:
             saver.restore(sess, tf.train.latest_checkpoint(model_path))
             print("Model restored from: {}".format(model_path))

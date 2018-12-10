@@ -35,6 +35,9 @@ def gen_latent_batch(sess, network, exp_param, postfix):
                 network.is_training: False
             })
 
+            if z.shape[-1] == 8192:
+                z = np.reshape(z, [-1, 4096, 2])[:, :, -1]
+
 
             ### Save data
             new_train_data = [z, np.zeros(z.shape), action, reward, done]
@@ -49,25 +52,27 @@ def gen_latent_batch(sess, network, exp_param, postfix):
 
 if __name__ == '__main__':
     ### Settings
-    model_name = 'breakout_continuous_LAT8_MADE1542627083'
+    model_path = 'saved_model/'
+    model_name = 'breakout_discrete_BLM1_STD0_LAT4096(2)_MADE1544445274'
 
     latent = [[32*128, 2]]
-    raw_dim = (210, 160, 3)
-    net_dim = (32*4, 32*3, 3)
-
+    # raw_dim = (210, 160, 3)
+    # net_dim = (32*4, 32*3, 3)
+    raw_dim = (84, 84, 4)
+    net_dim = (84, 84, 4)
 
     ### Do stuff
     exp_param = ExpParam(
         lat_type="discrete",
         dataset='breakout',
-        latent=latent,
+        latent=[[32 * 128, 2]],
         raw_type=tf.uint8,
         raw_dim=raw_dim,
         net_dim=net_dim,  # very close to org aspect ration
+        batch_size=2,  # for testing
     )
 
     ### Load model
-    model_path = 'saved_model/'
     model_path += model_name
 
     sess, network, _ = create_or_load_vae(model_path, exp_param=exp_param, critical_load=True)
@@ -78,4 +83,7 @@ if __name__ == '__main__':
 
     sess.close()
     print('done')
+
+    file_name = 'Breakout_latent_train_'
+    data_utils.load_h5_as_array(file_name, )
 
