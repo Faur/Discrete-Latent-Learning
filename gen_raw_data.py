@@ -54,6 +54,7 @@ def gen_data(gen_args, render=False):
     """ Format: (obs, action, reward, done)
     """
     batch_num, postfix, max_steps, frame_skip = gen_args
+    file_name = 'Breakout_raw_{}_{:04d}'.format(postfix, batch_num)
 
     # env = gym.make("BreakoutNoFrameskip-v4")
     # obs_data = []
@@ -127,6 +128,8 @@ def gen_data(gen_args, render=False):
         for n, done in enumerate(dones):
             if done:
                 observation_s[n] *= 0
+                print(file_name, i, len(observation_list), max_steps, end='\r')
+                # print(batch_num, len(observation_list), max_steps)
 
         # obs_mask = obs.astype(int) - obs
         obs_mask = observation.astype(int) - observation_s[:,:,:,-1,None]
@@ -166,6 +169,7 @@ def gen_data(gen_args, render=False):
             # obs = data_utils.normalize_observation(observation_s)
             # observation_s = observation_s_new
         i += 1
+    print()
 
     # data_as_array = np.concatenate(obs_data, 0)
     # data_as_array = np.vstack(obs_data)
@@ -183,7 +187,6 @@ def gen_data(gen_args, render=False):
     # print(data_utils.sizeof_fmt(size_per_obs))  # 24.6KiB
     # print(size_per_obs)  # 25218 Bytes
 
-    file_name = 'Breakout_raw_{}_{:04d}'.format(postfix, batch_num)
     # data_utils.save_np_array_as_h5(file_name, data_as_array)
     data_utils.save_lists_as_h5(file_name, data_as_lists)
 
@@ -229,19 +232,21 @@ def generate_raw_data(total_frames, postfix='', frame_skip=1):
 
 
 if __name__ == '__main__':
+    # python gen_raw_data.py --config A2C/config/breakout.json
+
     print(__name__, 'begin')
-    frame_skip = 4
+    frame_skip = 10
 
     # TODO: This causes memory issues!
     train_frames = 5e4
-    train_frames = 1e2
     # train_frames = 1e2
-    file_names = generate_raw_data(train_frames, 'train', frame_skip)
+    # train_frames = 1e2
+    file_names = generate_raw_data(train_frames, 'train_5', frame_skip)
     print('\n'*2)
 
     valid_frames = 1e2
-    # valid_frames = 1e2
-    file_names = generate_raw_data(valid_frames, 'valid')
+    valid_frames = 1e4
+    # file_names = generate_raw_data(valid_frames, 'valid')
 
     if 1:
         print("Load test - Begin.")
@@ -251,6 +256,7 @@ if __name__ == '__main__':
         data = data_utils.load_h5_as_list(data_path)
         print('data', type(data))
         print('data[0]', type(data[0]))
+        # print(data[0])
         print("Load test - Success!")
 
 

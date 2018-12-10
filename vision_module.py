@@ -49,7 +49,8 @@ class BaseAutoEncoder(object):
             method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         mask_net = tf.cast(mask_net, tf.float32)/255.
         if self.exp_param.g_size != 0:
-            g_kernel = self.gaussian_kernel(self.exp_param.g_size, 0, self.exp_param.g_std)
+            g_kernel = self.gaussian_kernel(size=self.exp_param.g_size, mean=0, std=self.exp_param.g_std)
+            mask_net = tf.reduce_mean(mask_net, -1, keepdims=True)  # TODO: Very unsatisfying solution!
             mask_net = tf.nn.conv2d(mask_net, g_kernel, strides=[1, 1, 1, 1], padding="SAME")
         mask_net = mask_net * self.exp_param.g_std / 0.3989  # https://stats.stackexchange.com/questions/143631/height-of-a-normal-distribution-curve
 
@@ -69,7 +70,10 @@ class BaseAutoEncoder(object):
         vals = d.prob(tf.range(start=-size, limit=size + 1, dtype=tf.float32))
         gauss_kernel = tf.einsum('i,j->ij', vals, vals)
 
-        return (gauss_kernel / tf.reduce_sum(gauss_kernel))[:, :, tf.newaxis, tf.newaxis]
+        gauss_kernel = (gauss_kernel / tf.reduce_sum(gauss_kernel))[:, :, tf.newaxis, tf.newaxis]
+        # gauss_kernel = tf.tile(gauss_kernel, [1, 1, 1, self.exp_param.net_dim[-1]])
+
+        return gauss_kernel
 
     def setup_network(self):
         self.encoder_out = self.encoder(self.image)
