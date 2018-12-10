@@ -17,7 +17,7 @@ def dummy_encoder_function(obs):
 
 
 class Trainer(BaseTrainer):
-    def __init__(self, sess, model, r_discount_factor=0.99,
+    def __init__(self, sess, model, latent_size, r_discount_factor=0.99,
                  lr_decay_method='linear', args=None):
         super().__init__(sess, model, args)
         self.save_every = 20000
@@ -40,11 +40,60 @@ class Trainer(BaseTrainer):
 
         self.env_summary_logger = EnvSummaryLogger(sess,
                                                    create_list_dirs(self.args.summary_dir, 'env', self.args.num_envs))
+        self.LATENT_SIZE = latent_size
 
-    def trainVAE(self, latent, env):
-        ZVector = latent
+    def trainFromVAE(self, env):
+        self._init_model()
+        self._load_model()
+
+        self.env = env
+        self.observation_s = np.zeros(
+            (env.num_envs, self.model.img_height, self.model.img_width, self.model.num_classes * self.model.num_stack),
+            dtype=np.uint8)
+        self.observation_s = self.__observation_update(self.env.reset(), self.observation_s)
+
+        self.states = self.model.step_policy.initial_state
+        self.dones = [False for _ in range(self.env.num_envs)]
+
+        tstart = time.time()
+        loss_list = np.zeros(100, )
+        policy_entropy_list = np.zeros(100, )
+        fps_list = np.zeros(100, )
+        arr_idx = 0
+        start_iteration = self.global_step_tensor.eval(self.sess)
+        self.global_time_step = self.global_time_step_tensor.eval(self.sess)
+
+        for iteration in tqdm(range(start_iteration, self.num_iterations + 1, 1), initial=start_iteration,
+                              total=self.num_iterations):
+
+            self.cur_iteration = iteration
+
+            obs, states, rewards, masks, actions, values = self.__rollout()
+            loss, policy_loss, value_loss, policy_entropy = self.__rollout_update(obs, states, rewards, masks, actions,
+                                                                                  values)
 
 
+            # Calculate and Summarize
+            loss_list[arr_idx] = loss
+            nseconds = time.time() - tstart
+            fps_list[arr_idx] = int((iteration * self.num_steps * self.env.num_envs) / nseconds)
+            policy_entropy_list[arr_idx] = policy_entropy
+
+            # Update the Global step
+            self.global_step_assign_op.eval(session=self.sess, feed_dict={
+                self.global_step_input: self.global_step_tensor.eval(self.sess) + 1})
+            arr_idx += 1
+
+            if not arr_idx % 100:
+                mean_loss = np.mean(loss_list)
+                mean_fps = np.mean(fps_list)
+                mean_pe = np.mean(policy_entropy_list)
+                print('Iteration:' + str(iteration) + ' - loss: ' + str(mean_loss)[:8] + ' - policy_entropy: ' + str(
+                    mean_pe)[:8] + ' - fps: ' + str(mean_fps))
+                arr_idx = 0
+            if iteration % self.save_every == 0:
+                self.save()
+        self.env.close()
 
     def train(self, env):
         self._init_model()
@@ -101,27 +150,50 @@ class Trainer(BaseTrainer):
                 self.save()
         self.env.close()
 
+    def testFromVAE(self, total_timesteps, env):
+        self._init_model()
+        self._load_model()
+
+        states = self.model.step_policy.initial_state
+        dones = [False for _ in range(env.num_envs)]
+
+        observation_s = np.zeros(
+            (env.num_envs, self.LATENT_SIZE, self.model.num_classes * self.model.num_stack),
+            dtype=np.uint8)
+
+        observationNew = dummy_encoder_function(env.reset())
+        # observationOld = dummy_encoder_function(observation_s)
+
+        observation_s = self.__observation_update(observationNew, observation_s)
+
+        for _ in tqdm(range(total_timesteps)):
+            actions, values, states = self.model.step_policy.step(observation_s, states, dones)
+
+            observation, rewards, dones, _ = env.step(actions)
+
+            observation = dummy_encoder_function(observation)
+
+            for n, done in enumerate(dones):
+                if done:
+                    observation_s[n] *= 0
+            observation_s = self.__observation_update(observation, observation_s)
+        env.close()
+
     def test(self, total_timesteps, env):
         self._init_model()
         self._load_model()
 
         states = self.model.step_policy.initial_state
-
         dones = [False for _ in range(env.num_envs)]
 
         observation_s = np.zeros(
-            (env.num_envs, self.model.img_height, self.model.img_width,
-             self.model.num_classes * self.model.num_stack),
+            (env.num_envs, self.model.img_height, self.model.img_width, self.model.num_classes * self.model.num_stack),
             dtype=np.uint8)
         observation_s = self.__observation_update(env.reset(), observation_s)
-        # if self.VAE is not None:
-            # self.observation_s = self.sess.run(
-
         for _ in tqdm(range(total_timesteps)):
             actions, values, states = self.model.step_policy.step(observation_s, states, dones)
             observation, rewards, dones, _ = env.step(actions)
-            # if self.VAE is not None:
-                # observation = self.sess.run(
+
             for n, done in enumerate(dones):
                 if done:
                     observation_s[n] *= 0
@@ -148,7 +220,7 @@ class Trainer(BaseTrainer):
         )
         return loss, policy_loss, value_loss, policy_entropy
 
-    def __observation_update(new_observation, old_observation):
+    def __observation_update(self, new_observation, old_observation):
         # Do frame-stacking here instead of the FrameStack wrapper to reduce IPC overhead
         updated_observation = np.roll(old_observation, shift=-1, axis=3)
         updated_observation[:, :, :, -1] = new_observation[:, :, :, 0]

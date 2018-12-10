@@ -8,20 +8,84 @@ from A2C.utils.utils import set_all_global_seeds
 
 
 class A2C:
-    def __init__(self, sess, args):
+    def __init__(self, sess, args, use_VAE):
+        self.latent_size = 4096
         self.args = args
         self.model = Model(sess,
                            optimizer_params={
                                'learning_rate': args.learning_rate, 'alpha': 0.99, 'epsilon': 1e-5}, args=self.args)
-        self.trainer = Trainer(sess, self.model, args=self.args)
+        self.trainer = Trainer(sess, self.model, args=self.args, latent_size=self.latent_size)
         self.env_class = A2C.env_name_parser(self.args.env_class)
+        self.useVAE = use_VAE
+
+    # def trainFromVAE(self, latent):
+    #     env = A2C.make_all_environments(self.args.num_envs, self.env_class, self.args.env_name,
+    #                                     self.args.env_seed)
+    #
+    #     print("\n\nBuilding the model...")
+    #     self.model.build(env.observation_space.shape, env.action_space.n)
+    #     print("Model is built successfully\n\n")
+    #
+    #     with open(self.args.experiment_dir + self.args.env_name + '.pkl', 'wb') as f:
+    #         pickle.dump((env.observation_space.shape, env.action_space.n), f, pickle.HIGHEST_PROTOCOL)
+    #
+    #     print('Training...')
+    #     try:
+    #         # Produce video only if monitor method is implemented.
+    #         try:
+    #             if self.args.record_video_every != -1:
+    #                 env.monitor(is_monitor=True, is_train=True, experiment_dir=self.args.experiment_dir,
+    #                             record_video_every=self.args.record_video_every)
+    #         except:
+    #             pass
+    #         self.trainer.trainFromVAE(env, latent)
+    #     except KeyboardInterrupt:
+    #         print('Error occured..\n')
+    #         self.trainer.save()
+    #         env.close()
+    #
+    # def testFromVAE(self, total_timesteps):
+    #     observation_space_shape, action_space_n = None, None
+    #     try:
+    #         with open(self.args.experiment_dir + self.args.env_name + '.pkl', 'rb') as f:
+    #             observation_space_shape, action_space_n = pickle.load(f)
+    #     except:
+    #         print(
+    #             "Environment or checkpoint data not found. Make sure that env_data.pkl is present in the experiment by running training first.\n")
+    #         exit(1)
+    #
+    #     env = self.make_all_environments(num_envs=1, env_class=self.env_class, env_name=self.args.env_name,
+    #                                      seed=self.args.env_seed)
+    #
+    #     self.model.build(observation_space_shape, action_space_n)
+    #
+    #     print('Testing...')
+    #     try:
+    #         # Produce video only if monitor method is implemented.
+    #         try:
+    #             if self.args.record_video_every != -1:
+    #                 env.monitor(is_monitor=True, is_train=False, experiment_dir=self.args.experiment_dir,
+    #                             record_video_every=self.args.record_video_every)
+    #             else:
+    #                 env.monitor(is_monitor=True, is_train=False, experiment_dir=self.args.experiment_dir,
+    #                             record_video_every=20)
+    #         except:
+    #             pass
+    #
+    #         self.trainer.testFromVAE(total_timesteps=total_timesteps, env=env)
+    #     except KeyboardInterrupt:
+    #         print('Error occured..\n')
+    #         env.close()
 
     def train(self):
         env = A2C.make_all_environments(self.args.num_envs, self.env_class, self.args.env_name,
                                         self.args.env_seed)
 
         print("\n\nBuilding the model...")
-        self.model.build(env.observation_space.shape, env.action_space.n)
+        if self.useVAE:
+            self.model.buildForVAE(env.observation_space.shape, env.action_space.n, self.latent_size)
+        else:
+            self.model.build(env.observation_space.shape, env.action_space.n)
         print("Model is built successfully\n\n")
 
         with open(self.args.experiment_dir + self.args.env_name + '.pkl', 'wb') as f:
@@ -36,7 +100,11 @@ class A2C:
                                 record_video_every=self.args.record_video_every)
             except:
                 pass
-            self.trainer.train(env)
+            if self.useVAE:
+                self.trainer.trainFromVAE(env)
+            else:
+                self.trainer.train(env)
+
         except KeyboardInterrupt:
             print('Error occured..\n')
             self.trainer.save()
@@ -55,7 +123,10 @@ class A2C:
         env = self.make_all_environments(num_envs=1, env_class=self.env_class, env_name=self.args.env_name,
                                          seed=self.args.env_seed)
 
-        self.model.build(observation_space_shape, action_space_n)
+        if self.useVAE:
+            self.model.buildForVAE(observation_space_shape, action_space_n)
+        else:
+            self.model.build(observation_space_shape, action_space_n)
 
         print('Testing...')
         try:
@@ -69,7 +140,10 @@ class A2C:
                                 record_video_every=20)
             except:
                 pass
-            self.trainer.test(total_timesteps=total_timesteps, env=env)
+            if self.useVAE:
+                self.trainer.testFromVAE(total_timesteps = total_timesteps, env=env)
+            else:
+                self.trainer.test(total_timesteps=total_timesteps, env=env)
         except KeyboardInterrupt:
             print('Error occured..\n')
             env.close()
