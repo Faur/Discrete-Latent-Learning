@@ -64,7 +64,7 @@ def create_or_load_vae(model_path, exp_param, critical_load=False):
         return sess, network, saver
 
 
-def train_vae(exp_param, experiment_name=None):
+def train_vae(exp_param, i=0, experiment_name=None):
     ### GENERAL SETUP
     if experiment_name is None:
         experiment_name = exp_param.toString()
@@ -84,7 +84,7 @@ def train_vae(exp_param, experiment_name=None):
     data_set = exp_param.dataset
 
     ### DATA
-    train_iter, test_iter = data_utils.load_data(batch_size, data_set)
+    train_iter, test_iter = data_utils.load_data(batch_size, data_set, i)
     # ball_col = data_utils.ball_col
     # rec_loss_multiplier = exp_param.rec_loss_multiplier
 
@@ -257,9 +257,9 @@ if __name__ == '__main__':
         # batch_size=2,  # for testing
     )
     train_vae(exp_param)
-    
+
     ## DISCRETE
-    
+
     exp_param = ExpParam(
         lat_type="discrete",
         dataset='mnist',
