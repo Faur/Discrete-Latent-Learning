@@ -15,7 +15,7 @@ def data_iterator_mnist(data, batch_size):
         epoch += 1
         if batch_size == -1:
             yield None, N, data
-
+            
         np.random.shuffle(data)
         for i in range(int(N/batch_size)):
             yield epoch, i*batch_size, data[i*batch_size:(i+1)*batch_size]
@@ -60,31 +60,10 @@ def data_iterator_atari(data, batch_size, shuffle=True):
             yield epoch, i * batch_size, out_data
 
 
-def load_data(train_batch_size, dataset='mnist', i=0, test_batch_size=64, shuffle=True):  #TODO: test_batch_size should be handled properly (=-1)
+def load_data(train_batch_size, dataset='mnist', test_batch_size=64, shuffle=True):  #TODO: test_batch_size should be handled properly (=-1)
     if dataset == 'mnist':
         mnist = tf.keras.datasets.mnist
         (x_train, y_train), (x_test, y_test) = mnist.load_data()
-        if i == 1:
-            x_train = x_train[y_train == 1]
-            y_train = y_train[y_train == 1]
-            x_test = x_test[y_test == 1]
-            y_test = y_test[y_test == 1]
-        elif i == 2:
-            ax = x_train[y_train == 1]
-            bx = x_train[y_train == 8]
-            x_train = np.concatenate([ax, bx], 0)
-
-            ay = y_train[y_train == 1]
-            by = y_train[y_train == 8]
-            y_train = np.concatenate([ay, by], 0)
-
-            axt = x_test[y_test == 1]
-            bxt = x_test[y_test == 8]
-            x_test = np.concatenate([axt, bxt], 0)
-
-            ayt = y_test[y_test == 1]
-            byt = y_test[y_test == 8]
-            y_test = np.concatenate([ayt, byt], 0)
         x_train = np.expand_dims(x_train/255., -1)
         x_test = np.expand_dims(x_test/255., -1)
 
