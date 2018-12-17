@@ -9,27 +9,15 @@ from gen_raw_data import __observation_update
 from A2C.ActorCritic import A2C
 from A2C.utils.utils import parse_args, create_experiment_dirs
 
-
-def encode_data(AE, sess, obs):
-    obs_mask = np.zeros_like(obs)
-    [z] = sess.run([AE.z], feed_dict={
-        AE.raw_input: obs,
-        AE.mask_in: obs_mask,
-        AE.is_training: False
-    })
-
-    if z.shape[-1] == 8192:
-        z = np.reshape(z, [-1, 4096, 2])[:, :, -1]
-
-    return z
+from A2C.utils.utils import encode_data
 
 
 def main():
-    model_name = 'breakout_discrete_BLM64_STD0_lr0.0001_LAT4096(2)_MADE1543847099'
-    model_path = 'C:\\Users\\Toke\\Dropbox\\MAI\\'
+    # model_name = 'breakout_discrete_BLM64_STD0_lr0.0001_LAT4096(2)_MADE1543847099'
+    # model_path = 'C:\\Users\\Toke\\Dropbox\\MAI\\'
 
-    model_name = 'breakout_discrete_BLM1_STD0_LAT4096(2)_MADE1544445274'
-    model_path = 'C:\\Users\\Toke\\Git\\Discrete-Latent-Learning\\saved_model\\'
+    model_name = 'VAEModel'
+    model_path = 'C:\\Users\\Vlad-PC\\Desktop\\'
 
     model_path += model_name
 
@@ -73,6 +61,23 @@ def main():
             create_experiment_dirs(config_args.experiment_dir)
 
         a2c = A2C(sess_a2c, config_args, True)
+
+        env = A2C.make_all_environments(a2c.args.num_envs, a2c.env_class, a2c.args.env_name,
+                                        a2c.args.env_seed)
+
+        print("\n\nBuilding the model...")
+        if a2c.useVAE:
+            a2c.model.buildForVAE(env.observation_space.shape, env.action_space.n, a2c.latent_size)
+        print("Model is built successfully\n")
+
+        # with open(a2c.args.experiment_dir + a2c.args.env_name + '.pkl', 'wb') as f:
+        #     pickle.dump((env.observation_space.shape, env.action_space.n), f, pickle.HIGHEST_PROTOCOL)
+
+        print('Training...')
+
+        # training
+        if a2c.args.to_train:
+            a2c.trainer.trainFromVAE(env, sess_ae, AE)
 
         # testing
         with open(a2c.args.experiment_dir + a2c.args.env_name + '.pkl', 'rb') as f:
@@ -118,7 +123,7 @@ def main():
                     # print(file_name, i, len(observation_list), max_steps, end='\r')
                     # print(batch_num, len(observation_list), max_steps)
 
-            print()
+            # print()
             env.render()
 
 

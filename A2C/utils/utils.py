@@ -104,3 +104,18 @@ def set_all_global_seeds(i):
 def find_trainable_variables(key):
     with tf.variable_scope(key):
         return tf.trainable_variables()
+
+
+
+def encode_data(AE, sess, obs):
+    obs_mask = np.zeros_like(obs)
+    [z] = sess.run([AE.z], feed_dict={
+        AE.raw_input: obs,
+        AE.mask_in: obs_mask,
+        AE.is_training: False
+    })
+
+    if z.shape[-1] == 8192:
+        z = np.reshape(z, [-1, 4096, 2])[:, :, -1]
+
+    return z

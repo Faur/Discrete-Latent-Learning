@@ -14,7 +14,7 @@ class A2C:
         self.model = Model(sess,
                            optimizer_params={
                                'learning_rate': args.learning_rate, 'alpha': 0.99, 'epsilon': 1e-5}, args=self.args)
-        self.trainer = Trainer(sess, self.model, args=self.args, latent_size=self.latent_size)
+        self.trainer = Trainer(sess, self.model, use_VAE, args=self.args, latent_size=self.latent_size)
         self.env_class = A2C.env_name_parser(self.args.env_class)
         self.useVAE = use_VAE
 

@@ -107,11 +107,13 @@ class Model:
     def init_VAE_input(self):
         with tf.name_scope('input'):
             self.X_input_train_shape = (
-                self.num_classes * self.num_stack, self.LATENT_SIZE,
+                # self.num_classes * self.num_stack, self.LATENT_SIZE,
+                None, self.LATENT_SIZE,
                 )
 
             self.X_input_step_shape = (
-                self.num_classes * self.num_stack, self.LATENT_SIZE,
+                # self.num_classes * self.num_stack, self.LATENT_SIZE,
+                None, self.LATENT_SIZE,
                 )
 
             self.actions = tf.placeholder(tf.int32, [None])  # actions
