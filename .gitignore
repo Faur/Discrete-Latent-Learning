@@ -6,6 +6,7 @@ data/*
 saved_model_*/*
 saved_model/*
 media/*
+xArchive/*
 A2C/experiments/experiments_breakout/*
 
 # Byte-compiled / optimized / DLL files
