@@ -109,13 +109,27 @@ def find_trainable_variables(key):
 
 def encode_data(AE, sess, obs):
     obs_mask = np.zeros_like(obs)
-    [z] = sess.run([AE.z], feed_dict={
-        AE.raw_input: obs,
-        AE.mask_in: obs_mask,
-        AE.is_training: False
-    })
+    if 1:
+        [z] = sess.run([AE.z], feed_dict={
+            AE.raw_input: obs,
+            AE.mask_in: obs_mask,
+            AE.is_training: False
+        })
+        if z.shape[-1] == 8192:
+            z = np.reshape(z, [-1, 4096, 2])[:, :, -1]
+        return z
+    else:
+        [lat_var] = sess.run([AE.latent_var], feed_dict={
+            AE.raw_input: obs,
+            AE.mask_in: obs_mask,
+            AE.is_training: False
+        })
+        q_y = lat_var[1][:,:,1]  # q_y
 
-    if z.shape[-1] == 8192:
-        z = np.reshape(z, [-1, 4096, 2])[:, :, -1]
+        if 0:  # Binary, but different
+            out = np.zeros_like(q_y)
+            out[q_y < 0.2] = 1
+            out[q_y > 0.8] = 1
 
-    return z
+        return q_y
+
