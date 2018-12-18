@@ -11,7 +11,7 @@
   "reward_discount_factor": 0.99,
   "max_to_keep": 4,
   "experiment_dir": "experiment_breakout_VAE",
-  "record_video_every": -1,
+  "record_video_every": 10,
   "to_train": true,
   "to_test": true
 }

@@ -65,6 +65,7 @@ class Trainer(BaseTrainer):
         for iteration in tqdm(range(start_iteration, self.num_iterations + 1, 1), initial=start_iteration,
                               total=self.num_iterations):
 
+            self.env.render()
             self.cur_iteration = iteration
 
             obs, states, rewards, masks, actions, values = self.__rollout(sess_ae, AE)
