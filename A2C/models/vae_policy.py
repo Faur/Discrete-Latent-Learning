@@ -15,7 +15,8 @@ class VAEPolicy(BasePolicy):
 
         with tf.variable_scope("policy", reuse=reuse):
 
-            fc4 = dense('fc4', self.X_input, output_dim=512, initializer=orthogonal_initializer(np.sqrt(2)), activation=tf.nn.relu, is_training=is_training)
+            fc4 = dense('fc4', self.X_input, output_dim=512, initializer=orthogonal_initializer(np.sqrt(2)),
+                        activation=tf.nn.relu, is_training=is_training)
 
             self.policy_logits = dense('policy_logits', fc4, output_dim=num_actions,
                                        initializer=orthogonal_initializer(np.sqrt(1.0)), is_training=is_training)

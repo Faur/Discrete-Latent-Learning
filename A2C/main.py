@@ -23,7 +23,7 @@ def main():
     config_args.experiment_dir, config_args.summary_dir, config_args.checkpoint_dir, config_args.output_dir, config_args.test_dir = \
         create_experiment_dirs(config_args.experiment_dir)
 
-    use_VAE = True
+    use_VAE = False
 
     a2c = A2C(sess, config_args, use_VAE)
 

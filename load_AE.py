@@ -68,64 +68,76 @@ def main():
         print("\n\nBuilding the model...")
         if a2c.useVAE:
             a2c.model.buildForVAE(env.observation_space.shape, env.action_space.n, a2c.latent_size)
-        print("Model is built successfully\n")
+            print("VAE Model is built successfully\n")
 
-        # with open(a2c.args.experiment_dir + a2c.args.env_name + '.pkl', 'wb') as f:
-        #     pickle.dump((env.observation_space.shape, env.action_space.n), f, pickle.HIGHEST_PROTOCOL)
+        with open(a2c.args.experiment_dir + a2c.args.env_name + '.pkl', 'wb') as f:
+            pickle.dump((env.observation_space.shape, env.action_space.n), f, pickle.HIGHEST_PROTOCOL)
 
         print('Training...')
 
         # training
-        if a2c.args.to_train:
-            a2c.trainer.trainFromVAE(env, sess_ae, AE)
+        try:
+            # Produce video only if monitor method is implemented.
+            try:
+                if a2c.args.record_video_every != -1:
+                    env.monitor(is_monitor=True, is_train=True, experiment_dir=a2c.args.experiment_dir,
+                                record_video_every=a2c.args.record_video_every)
+            except:
+                pass
+            if a2c.args.to_train:
+                a2c.trainer.trainFromVAE(env, sess_ae, AE)
 
-        # testing
-        with open(a2c.args.experiment_dir + a2c.args.env_name + '.pkl', 'rb') as f:
-            observation_space_shape, action_space_n = pickle.load(f)
+        except KeyboardInterrupt:
+            print('Error occured..\n')
+            a2c.trainer.save()
+            env.close()
 
-        env = a2c.make_all_environments(
-            num_envs=1,
-            env_class=a2c.env_class,
-            env_name=a2c.args.env_name,
-            seed=a2c.args.env_seed)
-
-        a2c.model.buildForVAE(observation_space_shape, action_space_n, a2c.latent_size)
-
-        a2c.trainer._init_model()
-        a2c.trainer._load_model()
-
-        states = a2c.trainer.model.step_policy.initial_state
-
-        dones = [False for _ in range(env.num_envs)]
-
-        observation_s = np.zeros(
-            (env.num_envs, a2c.trainer.model.img_height, a2c.trainer.model.img_width,
-             a2c.trainer.model.num_classes * a2c.trainer.model.num_stack),
-            dtype=np.uint8)
-
-        observation = env.reset()
-        observation_s = __observation_update(observation, observation_s)
-
-        i = 0
-        max_steps = 1e3
-        while i < max_steps:
-            i += 1
-            observation_z = encode_data(AE, sess_ae, observation_s)
-
-            ## TODO: Change a2c.model.step_policy.step
-            actions, values, states = a2c.model.step_policy.step(observation_z, states, dones)
-
-            observation, rewards, dones, _ = env.step(actions)
-
-            for n, done in enumerate(dones):
-                if done:
-                    observation_s[n] *= 0
-                    # print(file_name, i, len(observation_list), max_steps, end='\r')
-                    # print(batch_num, len(observation_list), max_steps)
-
-            # print()
-            env.render()
-
+        # # testing
+        # with open(a2c.args.experiment_dir + a2c.args.env_name + '.pkl', 'rb') as f:
+        #     observation_space_shape, action_space_n = pickle.load(f)
+        #
+        # env = a2c.make_all_environments(
+        #     num_envs=1,
+        #     env_class=a2c.env_class,
+        #     env_name=a2c.args.env_name,
+        #     seed=a2c.args.env_seed)
+        #
+        # a2c.model.buildForVAE(observation_space_shape, action_space_n, a2c.latent_size)
+        #
+        # a2c.trainer._init_model()
+        # a2c.trainer._load_model()
+        #
+        # states = a2c.trainer.model.step_policy.initial_state
+        #
+        # dones = [False for _ in range(env.num_envs)]
+        #
+        # observation_s = np.zeros(
+        #     (env.num_envs, a2c.trainer.model.img_height, a2c.trainer.model.img_width,
+        #      a2c.trainer.model.num_classes * a2c.trainer.model.num_stack),
+        #     dtype=np.uint8)
+        #
+        # observation = env.reset()
+        # observation_s = __observation_update(observation, observation_s)
+        #
+        # i = 0
+        # max_steps = 1e3
+        # while i < max_steps:
+        #     i += 1
+        #     observation_z = encode_data(AE, sess_ae, observation_s)
+        #
+        #     ## TODO: Change a2c.model.step_policy.step
+        #     actions, values, states = a2c.model.step_policy.step(observation_z, states, dones)
+        #
+        #     observation, rewards, dones, _ = env.step(actions)
+        #
+        #     for n, done in enumerate(dones):
+        #         if done:
+        #             observation_s[n] *= 0
+        #             # print(file_name, i, len(observation_list), max_steps, end='\r')
+        #             # print(batch_num, len(observation_list), max_steps)
+        #
+        #     # print()
+        #     env.render()
 
 if __name__ == '__main__':
     main()

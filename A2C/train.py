@@ -7,6 +7,11 @@ from A2C.utils.lr_decay import LearningRateDecay
 from A2C.utils.utils import create_list_dirs
 from A2C.utils.utils import encode_data
 
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+from scipy.misc import imshow
+from PIL import Image
+
 class Trainer(BaseTrainer):
     def __init__(self, sess, model, useVAE, latent_size, r_discount_factor=0.99,
                  lr_decay_method='linear', args=None):
@@ -66,7 +71,6 @@ class Trainer(BaseTrainer):
             loss, policy_loss, value_loss, policy_entropy = self.__rollout_update(obs, states, rewards, masks, actions,
                                                                                   values, sess_ae, AE)
 
-
             # Calculate and Summarize
             loss_list[arr_idx] = loss
             nseconds = time.time() - tstart
@@ -82,7 +86,8 @@ class Trainer(BaseTrainer):
                 mean_loss = np.mean(loss_list)
                 mean_fps = np.mean(fps_list)
                 mean_pe = np.mean(policy_entropy_list)
-                # print('Iteration:' + str(iteration) + ' - loss: ' + str(mean_loss)[:8] + ' - policy_entropy: ' + str(mean_pe)[:8] + ' - fps: ' + str(mean_fps))
+                print('Iteration:' + str(iteration) + ' - loss: ' + str(mean_loss)[:8] + ' - policy_entropy: ' + str(
+                    mean_pe)[:8] + ' - fps: ' + str(mean_fps))
                 arr_idx = 0
             if iteration % self.save_every == 0:
                 self.save()
@@ -97,8 +102,6 @@ class Trainer(BaseTrainer):
             (env.num_envs, self.model.img_height, self.model.img_width, self.model.num_classes * self.model.num_stack),
             dtype=np.uint8)
         self.observation_s = self.__observation_update(self.env.reset(), self.observation_s)
-        # if self.VAE is not None:
-            # self.observation_s = self.sess.run(
 
         self.states = self.model.step_policy.initial_state
         self.dones = [False for _ in range(self.env.num_envs)]
@@ -113,7 +116,7 @@ class Trainer(BaseTrainer):
 
         for iteration in tqdm(range(start_iteration, self.num_iterations + 1, 1), initial=start_iteration,
                               total=self.num_iterations):
-
+            self.env.render()
             self.cur_iteration = iteration
 
             obs, states, rewards, masks, actions, values = self.__rollout()
@@ -200,10 +203,14 @@ class Trainer(BaseTrainer):
         if self.useVAE:
             obs = encode_data(AE, sess_ae, observations)
             # actions, values, states = self.model.step_policy.step(obs, self.states, self.dones)
+        else:
+            obs= observations
+            # actions, values, states = self.model.step_policy.step(obs, self.states, self.dones)
 
         for step in range(len(obs)):
             current_learning_rate = self.learning_rate_decayed.value()
-        feed_dict = {self.model.train_policy.X_input: obs, self.model.actions: actions,
+        feed_dict = {self.model.train_policy.X_input: obs,
+                     self.model.actions: actions,
                      self.model.advantage: advantages,
                      self.model.reward: rewards, self.model.learning_rate: current_learning_rate,
                      self.model.is_training: True}
@@ -245,11 +252,31 @@ class Trainer(BaseTrainer):
 
             if self.useVAE:
                 obs = encode_data(AE, sess_ae, self.observation_s)
+
+                # obs1 = obs[0, :4096]
+                # obs1 = np.asarray(obs[0, :4096]).reshape(64, 64)
+                # plt.imshow(obs1)
+                # plt.show()
+
+                # obs2 = obs[1, :4096]
+                # obs3 = obs[2, :4096]
+                # obs4 = obs[3, :4096]
+                # plt.plot(AE.decoder(obs))
+                # plt.show()
+
+                # img = Image.fromarray(obs1.reshape(64, 64))
+                # img.show()
+
                 actions, values, states = self.model.step_policy.step(obs, self.states, self.dones)
             else:
                 actions, values, states = self.model.step_policy.step(self.observation_s, self.states, self.dones)
 
             # Actions, Values predicted across all parallel environments
+            # if self.useVAE:
+            #     obs = encode_data(AE, sess_ae, self.observation_s)
+            #     mb_obs.append(np.copy(obs))
+            # else:
+            #     mb_obs.append(np.copy(self.observation_s))
             mb_obs.append(np.copy(self.observation_s))
             mb_actions.append(actions)
             mb_values.append(values)
@@ -276,6 +303,10 @@ class Trainer(BaseTrainer):
         mb_dones.append(self.dones)
 
         # Conversion from (time_steps, num_envs) to (num_envs, time_steps)
+        # if self.useVAE:
+        #     mb_obs = np.asarray(mb_obs, dtype=np.uint8).swapaxes(1, 0)
+        # else:
+        #     mb_obs = np.asarray(mb_obs, dtype=np.uint8).swapaxes(1, 0).reshape(train_input_shape)
         mb_obs = np.asarray(mb_obs, dtype=np.uint8).swapaxes(1, 0).reshape(train_input_shape)
         mb_rewards = np.asarray(mb_rewards, dtype=np.float32).swapaxes(1, 0)
         mb_actions = np.asarray(mb_actions, dtype=np.int32).swapaxes(1, 0)

@@ -25,9 +25,10 @@ class A2C:
         print("\n\nBuilding the model...")
         if self.useVAE:
             self.model.buildForVAE(env.observation_space.shape, env.action_space.n, self.latent_size)
+            print("VAE model is built successfully\n")
         else:
             self.model.build(env.observation_space.shape, env.action_space.n)
-        print("Model is built successfully\n\n")
+            print("CNN model is built successfully\n")
 
         with open(self.args.experiment_dir + self.args.env_name + '.pkl', 'wb') as f:
             pickle.dump((env.observation_space.shape, env.action_space.n), f, pickle.HIGHEST_PROTOCOL)
@@ -42,8 +43,10 @@ class A2C:
             except:
                 pass
             if self.useVAE:
+                print("VAE\n")
                 self.trainer.trainFromVAE(env)
             else:
+                print("CNN\n")
                 self.trainer.train(env)
 
         except KeyboardInterrupt:
@@ -66,8 +69,10 @@ class A2C:
 
         if self.useVAE:
             self.model.buildForVAE(observation_space_shape, action_space_n)
+            print("VAE model is built successfully\n")
         else:
             self.model.build(observation_space_shape, action_space_n)
+            print("CNN model is built successfully\n")
 
         print('Testing...')
         try:
@@ -82,8 +87,10 @@ class A2C:
             except:
                 pass
             if self.useVAE:
+                print("VAE\n")
                 self.trainer.testFromVAE(total_timesteps = total_timesteps, env=env)
             else:
+                print("CNN\n")
                 self.trainer.test(total_timesteps=total_timesteps, env=env)
         except KeyboardInterrupt:
             print('Error occured..\n')

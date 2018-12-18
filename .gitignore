@@ -7,7 +7,7 @@ saved_model_*/*
 saved_model/*
 media/*
 xArchive/*
-A2C/experiments/experiments_breakout/*
+A2C/experiments/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

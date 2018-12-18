@@ -106,7 +106,6 @@ def find_trainable_variables(key):
         return tf.trainable_variables()
 
 
-
 def encode_data(AE, sess, obs):
     obs_mask = np.zeros_like(obs)
     [z] = sess.run([AE.z], feed_dict={
