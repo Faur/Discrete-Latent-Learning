@@ -118,7 +118,7 @@ def encode_data(AE, sess, obs):
         if z.shape[-1] == 8192:
             z = np.reshape(z, [-1, 4096, 2])[:, :, -1]
         return z
-    else:
+    elif 0:
         [lat_var] = sess.run([AE.latent_var], feed_dict={
             AE.raw_input: obs,
             AE.mask_in: obs_mask,
@@ -130,6 +130,18 @@ def encode_data(AE, sess, obs):
             out = np.zeros_like(q_y)
             out[q_y < 0.2] = 1
             out[q_y > 0.8] = 1
-
+            return out
         return q_y
+
+    else:
+        [encoder_out] = sess.run([AE.encoder_out], feed_dict={
+            AE.raw_input: obs,
+            AE.mask_in: obs_mask,
+            AE.is_training: False
+        })
+
+        o = np.reshape(enc_out, [encoder_out.shape[0], -1])
+        o = np.concatenate([o, np.zeros([enc_out.shape[0], 4096 - o.shape[1]])], -1)
+        return o
+
 
